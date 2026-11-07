@@ -11,7 +11,6 @@ const CURRENT_USER_KEY = 'Spotify_current_user';
 const LIKED_SONGS_KEY = 'Spotify_liked_songs';
 const LIBRARY_KEY = 'Spotify_library_songs';
 const PLAYLISTS_KEY = 'Spotify_user_playlists';
-const ADMIN_AUTH_KEY = 'spotify_admin_session';
 const PLAYER_STATE_STORAGE_KEY = 'spotify_global_player_state';
 
 // Centralized Music Player Global Store Class
@@ -163,7 +162,6 @@ const navLibrary = document.getElementById('nav-library');
 const navLiked = document.getElementById('nav-liked');
 const navTrending = document.getElementById('nav-trending');
 const navCustom = document.getElementById('nav-custom');
-const navAdmin = document.getElementById('nav-admin');
 
 const trackGrid = document.getElementById('track-grid');
 const searchInput = document.getElementById('search-input');
@@ -211,37 +209,6 @@ const authButtons = document.getElementById('auth-buttons');
 const userProfile = document.getElementById('user-profile');
 const userDisplayName = document.getElementById('user-display-name');
 const logoutBtn = document.getElementById('logout-btn');
-
-// Admin Portal
-const openAdminBtn = document.getElementById('open-admin-btn');
-const adminModal = document.getElementById('admin-modal');
-const adminLoginView = document.getElementById('admin-login-view');
-const adminDashboardView = document.getElementById('admin-dashboard-view');
-const closeAdminLoginBtn = document.getElementById('close-admin-login-btn');
-const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
-const adminLoginForm = document.getElementById('admin-login-form');
-const adminLoginEmail = document.getElementById('admin-login-email');
-const adminLoginPassword = document.getElementById('admin-login-password');
-const adminLoginSubmitBtn = document.getElementById('admin-login-submit-btn');
-const adminLogoutBtn = document.getElementById('admin-logout-btn');
-
-const tabAddSong = document.getElementById('tab-add-song');
-const tabManageSongs = document.getElementById('tab-manage-songs');
-const contentAddSong = document.getElementById('content-add-song');
-const contentManageSongs = document.getElementById('content-manage-songs');
-const adminSongsList = document.getElementById('admin-song-list');
-const adminSongsCount = document.getElementById('admin-songs-count');
-const adminAddSongForm = document.getElementById('admin-add-song-form');
-const adminSubmitBtn = document.getElementById('admin-submit-btn');
-
-const choiceAudioFile = document.getElementById('choice-audio-file');
-const choiceAudioUrl = document.getElementById('choice-audio-url');
-const boxAudioFile = document.getElementById('box-audio-file');
-const boxAudioUrl = document.getElementById('box-audio-url');
-const choiceCoverFile = document.getElementById('choice-cover-file');
-const choiceCoverUrl = document.getElementById('choice-cover-url');
-const boxCoverFile = document.getElementById('box-cover-file');
-const boxCoverUrl = document.getElementById('box-cover-url');
 
 // Playlists & Queue Modals
 const createPlaylistBtn = document.getElementById('create-playlist-btn');
@@ -313,6 +280,7 @@ themeSelect.addEventListener('change', () => {
 // ==========================================
 
 function updateActiveNav(activeElement) {
+  if (typeof closeArtistProfile === 'function') closeArtistProfile();
   const navLinks = document.querySelectorAll('.nav-menu a, .playlists li');
   navLinks.forEach(link => link.classList.remove('active'));
   if (activeElement) activeElement.classList.add('active');
@@ -378,18 +346,9 @@ if (navCustom) {
   });
 }
 
-if (navAdmin) {
-  navAdmin.addEventListener('click', (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    openAdminModal(e);
-  });
-}
-
 moodChips.forEach(chip => {
   chip.addEventListener('click', () => {
+    if (typeof closeArtistProfile === 'function') closeArtistProfile();
     moodChips.forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     const query = chip.dataset.query;
@@ -700,10 +659,7 @@ async function fetchCustomSongs() {
     } else {
       trackGrid.innerHTML = `
         <div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #b3b3b3;">
-          <p>No custom songs added yet.</p>
-          <button onclick="document.getElementById('open-admin-btn').click()" class="submit-btn" style="width: auto; padding: 8px 20px; margin-top: 15px;">
-            <i class="fa-solid fa-plus"></i> Add Your First Song
-          </button>
+          <p>No featured custom tracks found.</p>
         </div>
       `;
     }
@@ -750,6 +706,14 @@ function renderTracks() {
       loadTrack(currentTrackIndex);
       playAudio();
     });
+
+    const artistEl = card.querySelector('p');
+    if (artistEl) {
+      artistEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openArtistProfile(track.artist);
+      });
+    }
 
     const heartBtn = card.querySelector(`#heart-${index}`);
     heartBtn.addEventListener('click', (e) => {
@@ -1248,6 +1212,17 @@ function renderSuggestions(songs, query) {
       selectAndPlaySuggestion(song, songs);
     });
 
+    const artistElem = item.querySelector('.suggestion-artist');
+    if (artistElem) {
+      artistElem.style.cursor = 'pointer';
+      artistElem.title = `View ${song.artist} profile`;
+      artistElem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideSuggestions();
+        if (typeof openArtistProfile === 'function') openArtistProfile(song.artist);
+      });
+    }
+
     searchSuggestions.appendChild(item);
   });
 
@@ -1265,6 +1240,7 @@ function renderSuggestions(songs, query) {
 }
 
 function selectAndPlaySuggestion(song, allSuggestions) {
+  if (typeof closeArtistProfile === 'function') closeArtistProfile();
   hideSuggestions();
   searchInput.value = song.title;
 
@@ -1291,6 +1267,7 @@ function updateSuggestionHighlight() {
 }
 
 function executeSearch() {
+  if (typeof closeArtistProfile === 'function') closeArtistProfile();
   hideSuggestions();
   const query = searchInput.value.trim();
   if (query) {
@@ -2213,289 +2190,13 @@ async function addTrackToPlaylist(playlistId, playlistName, track) {
   showToast(`Added to "${playlistName}"!`, 'success');
 }
 
-// ==========================================
-// 14. ADMIN PORTAL (LOGIN, ADD & DELETE)
-// ==========================================
 
-function isAdminLoggedIn() {
-  return sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true';
-}
 
-function openAdminModal(e) {
-  if (e) {
-    if (typeof e.preventDefault === 'function') e.preventDefault();
-    if (typeof e.stopPropagation === 'function') e.stopPropagation();
-  }
-  adminModal.classList.remove('hidden');
 
-  if (isAdminLoggedIn()) {
-    adminLoginView.classList.add('hidden');
-    adminDashboardView.classList.remove('hidden');
-    loadAdminSongs();
-  } else {
-    adminLoginView.classList.remove('hidden');
-    adminDashboardView.classList.add('hidden');
-  }
-}
 
-function closeAdminModal(e) {
-  if (e) {
-    if (typeof e.preventDefault === 'function') e.preventDefault();
-    if (typeof e.stopPropagation === 'function') e.stopPropagation();
-  }
-  adminModal.classList.add('hidden');
-}
 
-openAdminBtn.addEventListener('click', openAdminModal);
-if (closeAdminModalBtn) closeAdminModalBtn.addEventListener('click', closeAdminModal);
-if (closeAdminLoginBtn) closeAdminLoginBtn.addEventListener('click', closeAdminModal);
 
-adminLoginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
 
-  const email = adminLoginEmail.value.trim();
-  const password = adminLoginPassword.value;
-
-  adminLoginSubmitBtn.disabled = true;
-  adminLoginSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
-
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      showToast(data.error || 'Invalid Admin Email or Password!', 'error');
-      return;
-    }
-
-    sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
-    adminLoginView.classList.add('hidden');
-    adminDashboardView.classList.remove('hidden');
-    loadAdminSongs();
-    showToast('Admin authenticated successfully! 🛡️', 'success');
-
-  } catch (err) {
-    if (email.toLowerCase() === 'admin@music.com' && password === 'admin123') {
-      sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
-      adminLoginView.classList.add('hidden');
-      adminDashboardView.classList.remove('hidden');
-      loadAdminSongs();
-      showToast('Admin authenticated successfully! 🛡️', 'success');
-    } else {
-      showToast('Error connecting to server. Please check credentials.', 'error');
-    }
-  } finally {
-    adminLoginSubmitBtn.disabled = false;
-    adminLoginSubmitBtn.innerHTML = '<i class="fa-solid fa-lock-open"></i> Authenticate & Enter';
-  }
-});
-
-if (adminLogoutBtn) {
-  adminLogoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem(ADMIN_AUTH_KEY);
-    adminDashboardView.classList.add('hidden');
-    adminLoginView.classList.remove('hidden');
-    showToast('Admin logged out successfully', 'info');
-  });
-}
-
-tabAddSong.addEventListener('click', () => {
-  tabAddSong.classList.add('active');
-  tabManageSongs.classList.remove('active');
-  contentAddSong.classList.remove('hidden');
-  contentManageSongs.classList.add('hidden');
-});
-
-tabManageSongs.addEventListener('click', () => {
-  tabManageSongs.classList.add('active');
-  tabAddSong.classList.remove('active');
-  contentManageSongs.classList.remove('hidden');
-  contentAddSong.classList.add('hidden');
-  loadAdminSongs();
-});
-
-choiceAudioFile.addEventListener('click', () => {
-  choiceAudioFile.classList.add('active');
-  choiceAudioUrl.classList.remove('active');
-  boxAudioFile.classList.remove('hidden');
-  boxAudioUrl.classList.add('hidden');
-});
-
-choiceAudioUrl.addEventListener('click', () => {
-  choiceAudioUrl.classList.add('active');
-  choiceAudioFile.classList.remove('active');
-  boxAudioUrl.classList.remove('hidden');
-  boxAudioFile.classList.add('hidden');
-});
-
-choiceCoverFile.addEventListener('click', () => {
-  choiceCoverFile.classList.add('active');
-  choiceCoverUrl.classList.remove('active');
-  boxCoverFile.classList.remove('hidden');
-  boxCoverUrl.classList.add('hidden');
-});
-
-choiceCoverUrl.addEventListener('click', () => {
-  choiceCoverUrl.classList.add('active');
-  choiceCoverFile.classList.remove('active');
-  boxCoverUrl.classList.remove('hidden');
-  boxCoverFile.classList.add('hidden');
-});
-
-async function loadAdminSongs() {
-  adminSongsList.innerHTML = '<p style="color: #b3b3b3; text-align: center; padding: 20px;">Loading custom tracks...</p>';
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/songs`);
-    const data = await res.json();
-
-    if (data.success) {
-      adminSongsCount.innerText = data.songs.length;
-
-      if (data.songs.length === 0) {
-        adminSongsList.innerHTML = '<p style="color: #888; text-align: center; padding: 25px;">No custom songs added yet. Use the "Add New Song" tab to upload your own tracks!</p>';
-        return;
-      }
-
-      adminSongsList.innerHTML = '';
-      data.songs.forEach((song) => {
-        const item = document.createElement('div');
-        item.classList.add('admin-song-item');
-        item.innerHTML = `
-          <div class="admin-song-info">
-            <img src="${song.cover}" alt="${song.title}" onerror="this.src='https://via.placeholder.com/300'">
-            <div class="admin-song-details">
-              <h4>${song.title}</h4>
-              <p>${song.artist} • <span style="color:#1db954;">${song.src.startsWith('http') ? 'Online URL' : 'Uploaded File'}</span></p>
-            </div>
-          </div>
-          <div class="admin-song-actions">
-            <button class="btn-delete-song" data-id="${song.id}" data-title="${song.title}">
-              <i class="fa-solid fa-trash"></i> Delete
-            </button>
-          </div>
-        `;
-
-        const deleteBtn = item.querySelector('.btn-delete-song');
-        deleteBtn.addEventListener('click', () => {
-          deleteCustomSong(song.id, song.title);
-        });
-
-        adminSongsList.appendChild(item);
-      });
-    }
-  } catch (err) {
-    adminSongsList.innerHTML = '<p style="color: #ff5555; text-align: center;">Error loading songs from server.</p>';
-  }
-}
-
-adminAddSongForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  if (!isAdminLoggedIn()) {
-    showToast('Admin authentication required! Please login first.', 'error');
-    openAdminModal();
-    return;
-  }
-
-  const title = document.getElementById('admin-song-title').value.trim();
-  const artist = document.getElementById('admin-song-artist').value.trim();
-  const album = document.getElementById('admin-song-album').value.trim();
-  const audioFile = document.getElementById('admin-audio-file').files[0];
-  const audioUrl = document.getElementById('admin-audio-url').value.trim();
-  const coverFile = document.getElementById('admin-cover-file').files[0];
-  const coverUrl = document.getElementById('admin-cover-url').value.trim();
-
-  if (!audioFile && !audioUrl) {
-    showToast('Please upload an audio file or enter an audio link.', 'error');
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('artist', artist);
-  formData.append('album', album);
-
-  if (audioFile) {
-    formData.append('audioFile', audioFile);
-  } else if (audioUrl) {
-    formData.append('audioUrl', audioUrl);
-  }
-
-  if (coverFile) {
-    formData.append('coverFile', coverFile);
-  } else if (coverUrl) {
-    formData.append('coverUrl', coverUrl);
-  }
-
-  adminSubmitBtn.disabled = true;
-  adminSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading Song...';
-
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/songs`, {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      showToast(data.error || 'Failed to add song.', 'error');
-      return;
-    }
-
-    showToast(`🎉 Success! Added "${data.song.title}" to library.`, 'success');
-    adminAddSongForm.reset();
-
-    tabManageSongs.click();
-
-    if (sectionTitle.innerText.includes("Custom") || sectionTitle.innerText.includes("Featured")) {
-      fetchCustomSongs();
-    } else {
-      fetchOnlineSongs("Top Hits");
-    }
-  } catch (err) {
-    console.error('Error adding song:', err);
-    showToast('Failed to connect to server: ' + err.message, 'error');
-  } finally {
-    adminSubmitBtn.disabled = false;
-    adminSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload & Add Song';
-  }
-});
-
-async function deleteCustomSong(songId, songTitle) {
-  if (!isAdminLoggedIn()) {
-    showToast('Admin authentication required!', 'error');
-    openAdminModal();
-    return;
-  }
-
-  const confirmed = confirm(`Are you sure you want to delete "${songTitle}"?`);
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/songs/${songId}`, {
-      method: 'DELETE'
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      showToast(`Deleted "${songTitle}"`, 'info');
-      loadAdminSongs();
-
-      trackList = trackList.filter(s => s.id !== songId);
-      renderTracks();
-    } else {
-      showToast(data.error || 'Failed to delete song.', 'error');
-    }
-  } catch (err) {
-    console.error('Delete error:', err);
-    showToast('Error connecting to server to delete song.', 'error');
-  }
-}
 
 // ==========================================
 // 15. GLOBAL POPUP / MODAL BEHAVIOR
@@ -2632,8 +2333,10 @@ const lyricsTitle = document.getElementById('lyrics-title');
 const lyricsArtist = document.getElementById('lyrics-artist');
 const lyricsCoverArt = document.getElementById('lyrics-cover-art');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
+const lyricsTranslateBtn = document.getElementById('lyrics-translate-btn');
 
 let currentLyricsData = null;
+let isLyricsTranslationActive = false;
 
 function parseLrc(lrcText) {
   if (!lrcText) return [];
@@ -2663,11 +2366,17 @@ async function fetchLyricsForTrack(track) {
   if (lyricsArtist) lyricsArtist.innerText = track.artist || 'Unknown';
   if (lyricsCoverArt && track.cover) lyricsCoverArt.src = track.cover;
 
+  isLyricsTranslationActive = false;
+  if (lyricsTranslateBtn) {
+    lyricsTranslateBtn.classList.remove('active');
+    lyricsTranslateBtn.innerHTML = '<i class="fa-solid fa-language"></i> Meaning (अर्थ)';
+  }
+
   if (lyricsContainer) {
     lyricsContainer.innerHTML = `
       <div class="lyrics-loading">
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Fetching real-time lyrics for "${track.title}"...</p>
+        <p>Fetching real-time lyrics for "${escapeHtml(track.title)}"...</p>
       </div>
     `;
   }
@@ -2678,16 +2387,16 @@ async function fetchLyricsForTrack(track) {
 
     if (data.success && data.syncedLyrics) {
       const parsed = parseLrc(data.syncedLyrics);
-      currentLyricsData = { isSynced: true, parsedLines: parsed, plainLyrics: null };
+      currentLyricsData = { isSynced: true, parsedLines: parsed, plainLyrics: null, translations: null };
       renderSyncedLyrics(parsed);
       if (lyricsStatusBadge) {
         lyricsStatusBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> Real-time Synced';
         lyricsStatusBadge.style.color = '#1db954';
       }
     } else if (data.success && data.plainLyrics) {
-      currentLyricsData = { isSynced: false, parsedLines: [], plainLyrics: data.plainLyrics };
+      currentLyricsData = { isSynced: false, parsedLines: [], plainLyrics: data.plainLyrics, translations: null };
       if (lyricsContainer) {
-        lyricsContainer.innerHTML = `<div class="plain-lyrics-view">${data.plainLyrics}</div>`;
+        lyricsContainer.innerHTML = `<div class="plain-lyrics-view">${escapeHtml(data.plainLyrics)}</div>`;
       }
       if (lyricsStatusBadge) {
         lyricsStatusBadge.innerHTML = '<i class="fa-regular fa-file-lines"></i> Plain Lyrics';
@@ -2701,7 +2410,7 @@ async function fetchLyricsForTrack(track) {
     if (lyricsContainer) {
       lyricsContainer.innerHTML = `
         <div class="plain-lyrics-view" style="color: #888;">
-          🎵 Now playing: <b>${track.title}</b><br><br>
+          🎵 Now playing: <b>${escapeHtml(track.title)}</b><br><br>
           Lyrics currently not available for this song version.<br>
           Sing along with the groove! 🎶
         </div>
@@ -2717,7 +2426,16 @@ function renderSyncedLyrics(parsedLines) {
     const div = document.createElement('div');
     div.classList.add('lyric-line');
     div.id = `lyric-line-${index}`;
-    div.innerText = item.text;
+
+    if (isLyricsTranslationActive && currentLyricsData && currentLyricsData.translations && currentLyricsData.translations[index]) {
+      div.innerHTML = `
+        <div class="lyric-orig">${escapeHtml(item.text)}</div>
+        <div class="lyric-trans">✨ ${escapeHtml(currentLyricsData.translations[index])}</div>
+      `;
+    } else {
+      div.innerText = item.text;
+    }
+
     div.addEventListener('click', () => {
       audio.currentTime = item.time;
       if (!isPlaying) playAudio();
@@ -2749,6 +2467,76 @@ function updateSyncedLyrics(currentTime) {
       newActive.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
+}
+
+if (lyricsTranslateBtn) {
+  lyricsTranslateBtn.addEventListener('click', async () => {
+    if (!currentLyricsData || (!currentLyricsData.isSynced && !currentLyricsData.plainLyrics)) {
+      showToast('No lyrics available to translate', 'info');
+      return;
+    }
+
+    if (isLyricsTranslationActive) {
+      isLyricsTranslationActive = false;
+      lyricsTranslateBtn.classList.remove('active');
+      lyricsTranslateBtn.innerHTML = '<i class="fa-solid fa-language"></i> Meaning (अर्थ)';
+      if (currentLyricsData.isSynced) {
+        renderSyncedLyrics(currentLyricsData.parsedLines);
+      } else if (currentLyricsData.plainLyrics && lyricsContainer) {
+        lyricsContainer.innerHTML = `<div class="plain-lyrics-view">${escapeHtml(currentLyricsData.plainLyrics)}</div>`;
+      }
+      return;
+    }
+
+    // Activate translation
+    if (!currentLyricsData.translations) {
+      lyricsTranslateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Translating...';
+      lyricsTranslateBtn.disabled = true;
+
+      try {
+        let linesToTranslate = [];
+        if (currentLyricsData.isSynced) {
+          linesToTranslate = currentLyricsData.parsedLines.map(l => l.text);
+        } else if (currentLyricsData.plainLyrics) {
+          linesToTranslate = currentLyricsData.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        }
+
+        const res = await fetch(`${API_BASE}/api/lyrics/translate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lines: linesToTranslate, targetLang: 'hi' })
+        });
+        const data = await res.json();
+        const transList = data.translatedLines || data.translations;
+        if (data.success && Array.isArray(transList)) {
+          currentLyricsData.translations = transList;
+        } else {
+          throw new Error(data.error || 'Translation failed');
+        }
+      } catch (err) {
+        console.error('Translation error:', err);
+        showToast('Translation service unavailable. Please try again.', 'error');
+        lyricsTranslateBtn.innerHTML = '<i class="fa-solid fa-language"></i> Meaning (अर्थ)';
+        lyricsTranslateBtn.disabled = false;
+        return;
+      }
+      lyricsTranslateBtn.disabled = false;
+    }
+
+    isLyricsTranslationActive = true;
+    lyricsTranslateBtn.classList.add('active');
+    lyricsTranslateBtn.innerHTML = '<i class="fa-solid fa-check"></i> Meaning ON';
+
+    if (currentLyricsData.isSynced) {
+      renderSyncedLyrics(currentLyricsData.parsedLines);
+    } else if (currentLyricsData.translations && lyricsContainer) {
+      lyricsContainer.innerHTML = `
+        <div class="plain-lyrics-view">
+          ${currentLyricsData.translations.map(t => `<p style="margin: 8px 0; color: #86efac; font-size: 15px;">✨ ${escapeHtml(t)}</p>`).join('')}
+        </div>
+      `;
+    }
+  });
 }
 
 if (lyricsBtn) {
@@ -3225,6 +3013,239 @@ if (closeFullscreenVizBtn) closeFullscreenVizBtn.addEventListener('click', stopF
 if (vizPlayBtn) vizPlayBtn.addEventListener('click', () => { togglePlay(); updateVizMeta(); });
 if (vizPrevBtn) vizPrevBtn.addEventListener('click', () => { playPrevTrack(); updateVizMeta(); });
 if (vizNextBtn) vizNextBtn.addEventListener('click', () => { playNextTrack(); updateVizMeta(); });
+
+// ==========================================
+// 23. ARTIST PROFILE & DISCOGRAPHY VIEW
+// ==========================================
+let currentArtistTracks = [];
+
+const artistProfileView = document.getElementById('artist-profile-view');
+const artistBackBtn = document.getElementById('artist-back-btn');
+const artistHeroName = document.getElementById('artist-hero-name');
+const artistHeroImg = document.getElementById('artist-hero-img');
+const artistHeroListeners = document.getElementById('artist-hero-listeners');
+const artistPlayAllBtn = document.getElementById('artist-play-all-btn');
+const artistShuffleBtn = document.getElementById('artist-shuffle-btn');
+const artistTracksList = document.getElementById('artist-tracks-list');
+const artistAlbumsGrid = document.getElementById('artist-albums-grid');
+const artistAlbumsSection = document.getElementById('artist-albums-section');
+
+function closeArtistProfile() {
+  if (artistProfileView && !artistProfileView.classList.contains('hidden')) {
+    artistProfileView.classList.add('hidden');
+    const moodChipsContainer = document.querySelector('.mood-chips-container');
+    const secTitle = document.getElementById('section-title');
+    const trGrid = document.getElementById('track-grid');
+    const musicSections = document.querySelectorAll('.music-section');
+    if (moodChipsContainer) moodChipsContainer.style.display = '';
+    if (secTitle) secTitle.style.display = '';
+    if (trGrid) trGrid.classList.remove('hidden');
+    musicSections.forEach(s => s.style.display = '');
+  }
+}
+
+async function openArtistProfile(artistName) {
+  if (!artistName || artistName === 'Unknown Artist' || artistName === 'Various Artists') return;
+
+  // Clean artist name (if multiple comma separated, pick primary artist)
+  const primaryArtist = artistName.split(',')[0].split('&')[0].trim();
+  if (!primaryArtist) return;
+
+  const moodChipsContainer = document.querySelector('.mood-chips-container');
+  const secTitle = document.getElementById('section-title');
+  const trGrid = document.getElementById('track-grid');
+  const musicSections = document.querySelectorAll('.music-section');
+
+  if (!artistProfileView) return;
+
+  // Show profile, hide standard grid and header chips
+  if (moodChipsContainer) moodChipsContainer.style.display = 'none';
+  if (secTitle) secTitle.style.display = 'none';
+  if (trGrid) trGrid.classList.add('hidden');
+  musicSections.forEach(s => s.style.display = 'none');
+  artistProfileView.classList.remove('hidden');
+
+  // Scroll main container to top smoothly
+  const mainContent = document.querySelector('.main-content');
+  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Initial skeleton / loading state
+  if (artistHeroName) artistHeroName.innerText = primaryArtist;
+  if (artistHeroListeners) artistHeroListeners.innerText = 'Fetching artist profile...';
+  if (artistHeroImg) artistHeroImg.src = 'https://via.placeholder.com/300?text=' + encodeURIComponent(primaryArtist);
+
+  if (artistTracksList) {
+    artistTracksList.innerHTML = `
+      <div style="padding: 25px; text-align: center; color: #888;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #1db954;"></i>
+        <p style="margin-top: 10px; font-size: 14px;">Loading top tracks and discography for ${escapeHtml(primaryArtist)}...</p>
+      </div>
+    `;
+  }
+  if (artistAlbumsGrid) {
+    artistAlbumsGrid.innerHTML = `
+      <div style="padding: 20px; text-align: center; color: #888;">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/artist?name=${encodeURIComponent(primaryArtist)}`);
+    const data = await res.json();
+
+    if (!data.success || !data.artist) {
+      throw new Error(data.error || 'Artist not found');
+    }
+
+    const artist = data.artist;
+    currentArtistTracks = artist.topTracks || [];
+
+    if (artistHeroName) artistHeroName.innerText = artist.name || primaryArtist;
+    if (artistHeroImg) artistHeroImg.src = artist.image || 'https://via.placeholder.com/300';
+    if (artistHeroListeners) {
+      artistHeroListeners.innerText = artist.monthlyListeners ? `${artist.monthlyListeners} Monthly Listeners` : 'Top Trending Artist';
+    }
+
+    // Render Popular Tracks
+    renderArtistTracks(currentArtistTracks);
+
+    // Render Albums & Discography
+    if (artist.albums && artist.albums.length > 0) {
+      if (artistAlbumsSection) artistAlbumsSection.style.display = '';
+      renderArtistAlbums(artist.albums, artist.name);
+    } else {
+      if (artistAlbumsSection) artistAlbumsSection.style.display = 'none';
+    }
+
+  } catch (err) {
+    console.error('Failed to load artist:', err);
+    if (artistHeroListeners) artistHeroListeners.innerText = 'Artist Discography';
+    // Fallback: search tracks using general search
+    try {
+      const fallbackRes = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(primaryArtist)}`);
+      const fallbackData = await fallbackRes.json();
+      if (fallbackData.results && fallbackData.results.length > 0) {
+        currentArtistTracks = fallbackData.results;
+        renderArtistTracks(currentArtistTracks);
+      } else {
+        if (artistTracksList) artistTracksList.innerHTML = '<p style="color: #888; padding: 20px;">No tracks found for this artist.</p>';
+      }
+    } catch (e) {
+      if (artistTracksList) artistTracksList.innerHTML = '<p style="color: #ef4444; padding: 20px;">Unable to load artist tracks right now.</p>';
+    }
+  }
+}
+
+function renderArtistTracks(tracks) {
+  if (!artistTracksList) return;
+  artistTracksList.innerHTML = '';
+
+  if (!tracks || tracks.length === 0) {
+    artistTracksList.innerHTML = '<p style="color: #888; padding: 20px;">No tracks available for this artist.</p>';
+    return;
+  }
+
+  tracks.slice(0, 10).forEach((track, idx) => {
+    const row = document.createElement('div');
+    row.className = 'artist-track-row';
+    row.title = `Play ${track.title}`;
+
+    const durationStr = track.duration ? formatTime(track.duration) : '3:30';
+
+    row.innerHTML = `
+      <div class="artist-track-rank">${idx + 1}</div>
+      <img src="${track.cover || 'https://via.placeholder.com/60'}" alt="${escapeHtml(track.title)}" onerror="this.src='https://via.placeholder.com/60'">
+      <div class="artist-track-info">
+        <h4>${escapeHtml(track.title)}</h4>
+        <p>${escapeHtml(track.artist || '')}</p>
+      </div>
+      <div class="artist-track-duration">${durationStr}</div>
+      <div class="artist-track-play" style="color: #1db954; font-size: 16px;">
+        <i class="fa-solid fa-play"></i>
+      </div>
+    `;
+
+    row.addEventListener('click', () => {
+      trackList = [...tracks];
+      currentTrackIndex = idx;
+      loadTrack(currentTrackIndex);
+      playAudio();
+      showToast(`Playing "${track.title}" 🎵`, 'success');
+    });
+
+    artistTracksList.appendChild(row);
+  });
+}
+
+function renderArtistAlbums(albums, artistName) {
+  if (!artistAlbumsGrid) return;
+  artistAlbumsGrid.innerHTML = '';
+
+  albums.forEach((alb) => {
+    const card = document.createElement('div');
+    card.className = 'album-card';
+    card.title = `Listen to ${alb.title}`;
+
+    card.innerHTML = `
+      <img src="${alb.cover || 'https://via.placeholder.com/300'}" alt="${escapeHtml(alb.title)}" onerror="this.src='https://via.placeholder.com/300'">
+      <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(alb.title)}</h4>
+      <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${escapeHtml(alb.year ? alb.year + ' • Album' : 'Album')}</p>
+    `;
+
+    card.addEventListener('click', () => {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) searchInput.value = alb.title;
+      closeArtistProfile();
+      fetchOnlineSongs(alb.title);
+      showToast(`Loading album "${alb.title}"...`, 'info');
+    });
+
+    artistAlbumsGrid.appendChild(card);
+  });
+}
+
+if (artistBackBtn) {
+  artistBackBtn.addEventListener('click', closeArtistProfile);
+}
+
+if (artistPlayAllBtn) {
+  artistPlayAllBtn.addEventListener('click', () => {
+    if (currentArtistTracks && currentArtistTracks.length > 0) {
+      trackList = [...currentArtistTracks];
+      currentTrackIndex = 0;
+      loadTrack(0);
+      playAudio();
+      showToast(`Playing Top Hits! 🎶`, 'success');
+    }
+  });
+}
+
+if (artistShuffleBtn) {
+  artistShuffleBtn.addEventListener('click', () => {
+    if (currentArtistTracks && currentArtistTracks.length > 0) {
+      const shuffled = [...currentArtistTracks].sort(() => Math.random() - 0.5);
+      trackList = shuffled;
+      currentTrackIndex = 0;
+      loadTrack(0);
+      playAudio();
+      showToast(`Shuffling artist hits! 🔀`, 'info');
+    }
+  });
+}
+
+// Click on Artist name in bottom player bar opens Artist Profile
+const bottomTrackArtist = document.getElementById('track-artist');
+if (bottomTrackArtist) {
+  bottomTrackArtist.style.cursor = 'pointer';
+  bottomTrackArtist.title = 'View Artist Profile';
+  bottomTrackArtist.addEventListener('click', () => {
+    const name = bottomTrackArtist.innerText.trim();
+    if (name && name !== 'Artist Name' && name !== 'Unknown' && name !== 'Select a song') {
+      openArtistProfile(name);
+    }
+  });
+}
 
 // Initializations
 checkAuthState();

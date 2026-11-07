@@ -26,7 +26,6 @@
         <a href="#" id="nav-home" class="active"><i class="fa-solid fa-house"></i> Home</a>
         <a href="#" id="nav-discover"><i class="fa-solid fa-compass"></i> Discover</a>
         <a href="#" id="nav-library"><i class="fa-solid fa-book"></i> Your Library</a>
-        <a href="#" id="nav-admin"><i class="fa-solid fa-sliders"></i> Admin Panel</a>
       </nav>
 
       <!-- Playlists Section -->
@@ -99,11 +98,6 @@
             <i class="fa-solid fa-download"></i> Install
           </button>
 
-          <!-- Admin Quick Access Button -->
-          <button id="open-admin-btn" class="btn-admin" title="Admin Portal - Add/Delete Songs">
-            <i class="fa-solid fa-shield-halved"></i> Admin
-          </button>
-
           <!-- Auth Action Buttons / User Profile -->
           <div class="auth-buttons" id="auth-buttons">
             <button id="open-login-btn" class="btn-secondary">Log in</button>
@@ -132,6 +126,68 @@
       <!-- Music Grid -->
       <section class="track-grid" id="track-grid">
         <!-- Tracks rendered dynamically via JavaScript -->
+      </section>
+
+      <!-- Popular Tracks Horizontal Scroll Section -->
+      <div class="music-section">
+        <h2>Popular Tracks</h2>
+        <div class="music-row">
+          <div class="music-card">
+            <img src="album1.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'">
+            <p>Track 1</p>
+          </div>
+          <div class="music-card">
+            <img src="album2.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300'">
+            <p>Track 2</p>
+          </div>
+          <div class="music-card">
+            <img src="album3.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300'">
+            <p>Track 3</p>
+          </div>
+          <div class="music-card">
+            <img src="album4.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=300'">
+            <p>Track 4</p>
+          </div>
+          <div class="music-card">
+            <img src="album5.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'">
+            <p>Track 5</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Artist Profile Page View -->
+      <section id="artist-profile-view" class="artist-profile-view hidden">
+        <div class="artist-hero-banner">
+          <button id="artist-back-btn" class="artist-back-btn" title="Back to Music Grid"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <div class="artist-hero-content">
+            <img src="https://via.placeholder.com/200" id="artist-hero-img" alt="Artist Profile">
+            <div class="artist-hero-details">
+              <div class="artist-verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Artist</div>
+              <h1 id="artist-hero-name">Artist Name</h1>
+              <p id="artist-hero-listeners" class="artist-listeners">0 Monthly Listeners</p>
+              <div class="artist-hero-actions">
+                <button id="artist-play-all-btn" class="btn-primary"><i class="fa-solid fa-play"></i> Play Top Hits</button>
+                <button id="artist-shuffle-btn" class="btn-secondary"><i class="fa-solid fa-shuffle"></i> Shuffle</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="artist-sections-wrap">
+          <div class="artist-section">
+            <h3 class="artist-section-title">Popular Tracks</h3>
+            <div class="artist-tracks-list" id="artist-tracks-list">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <div class="artist-section" id="artist-albums-section">
+            <h3 class="artist-section-title">Albums & Discography</h3>
+            <div class="artist-albums-grid" id="artist-albums-grid">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -241,111 +297,6 @@
         <button type="submit" class="submit-btn">Log In</button>
         <p class="switch-form">Don't have an account? <a href="#" id="switch-to-signup">Sign up</a></p>
       </form>
-    </div>
-  </div>
-
-  <!-- ADMIN PORTAL MODAL -->
-  <div class="modal-overlay hidden" id="admin-modal">
-    <div class="modal-card admin-login-card" id="admin-login-view">
-      <button type="button" class="close-modal" id="close-admin-login-btn">&times;</button>
-      <div class="admin-modal-header">
-        <div class="admin-shield-icon"><i class="fa-solid fa-user-shield"></i></div>
-        <h2>Admin Authentication</h2>
-        <p>Enter administrator email & password to access portal</p>
-      </div>
-      <form id="admin-login-form" class="auth-form">
-        <div class="input-group">
-          <label for="admin-login-email"><i class="fa-solid fa-envelope"></i> Admin Email</label>
-          <input type="email" id="admin-login-email" placeholder="admin@music.com" value="admin@music.com" required>
-        </div>
-        <div class="input-group">
-          <label for="admin-login-password"><i class="fa-solid fa-key"></i> Admin Password</label>
-          <input type="password" id="admin-login-password" placeholder="Enter admin password" value="admin123" required>
-        </div>
-        <div class="admin-creds-hint">
-          <i class="fa-solid fa-circle-info"></i>
-          <div>Default Admin Login: <b>admin@music.com</b> | <b>admin123</b></div>
-        </div>
-        <button type="submit" class="submit-btn" id="admin-login-submit-btn">
-          <i class="fa-solid fa-lock-open"></i> Authenticate & Enter
-        </button>
-      </form>
-    </div>
-
-    <div class="modal-card admin-modal-card hidden" id="admin-dashboard-view">
-      <button type="button" class="close-modal" id="close-admin-modal-btn">&times;</button>
-      <div class="admin-modal-header dashboard-header">
-        <div>
-          <h2><i class="fa-solid fa-sliders"></i> Admin Music Manager</h2>
-          <p>Add new tracks to the platform or delete existing ones</p>
-        </div>
-        <button type="button" id="admin-logout-btn" class="btn-admin-logout" title="Lock Admin Portal">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Admin Logout
-        </button>
-      </div>
-
-      <div class="admin-tabs">
-        <button type="button" class="admin-tab-btn active" id="tab-add-song"><i class="fa-solid fa-plus"></i> Add New Song</button>
-        <button type="button" class="admin-tab-btn" id="tab-manage-songs"><i class="fa-solid fa-list-check"></i> Manage Songs (<span id="admin-songs-count">0</span>)</button>
-      </div>
-
-      <div class="admin-tab-content" id="content-add-song">
-        <form id="admin-add-song-form" class="admin-form" enctype="multipart/form-data">
-          <div class="form-row">
-            <div class="input-group">
-              <label for="admin-song-title">Song Title *</label>
-              <input type="text" id="admin-song-title" name="title" placeholder="e.g. Dil Nu" required>
-            </div>
-            <div class="input-group">
-              <label for="admin-song-artist">Artist *</label>
-              <input type="text" id="admin-song-artist" name="artist" placeholder="e.g. AP Dhillon" required>
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="admin-song-album">Album Name (Optional)</label>
-            <input type="text" id="admin-song-album" name="album" placeholder="e.g. Two Hearts Never Break">
-          </div>
-          <div class="media-input-box">
-            <label class="media-label"><i class="fa-solid fa-music"></i> Audio Source *</label>
-            <div class="media-choice-tabs">
-              <span class="choice-tab active" data-choice="file" id="choice-audio-file">Upload Audio File</span>
-              <span class="choice-tab" data-choice="url" id="choice-audio-url">Enter Audio Link / URL</span>
-            </div>
-            <div id="box-audio-file" class="choice-box">
-              <input type="file" id="admin-audio-file" name="audioFile" accept="audio/*">
-              <small class="hint-text">Supported: MP3, M4A, WAV, OGG (Max 50MB)</small>
-            </div>
-            <div id="box-audio-url" class="choice-box hidden">
-              <input type="url" id="admin-audio-url" name="audioUrl" placeholder="https://example.com/song.mp3">
-              <small class="hint-text">Paste any direct online MP3 or audio stream URL</small>
-            </div>
-          </div>
-          <div class="media-input-box">
-            <label class="media-label"><i class="fa-solid fa-image"></i> Album Cover Artwork</label>
-            <div class="media-choice-tabs">
-              <span class="choice-tab active" data-choice="file" id="choice-cover-file">Upload Image File</span>
-              <span class="choice-tab" data-choice="url" id="choice-cover-url">Enter Image URL</span>
-            </div>
-            <div id="box-cover-file" class="choice-box">
-              <input type="file" id="admin-cover-file" name="coverFile" accept="image/*">
-              <small class="hint-text">Supported: JPG, PNG, WEBP (Square 500x500 recommended)</small>
-            </div>
-            <div id="box-cover-url" class="choice-box hidden">
-              <input type="url" id="admin-cover-url" name="coverUrl" placeholder="https://example.com/cover.jpg">
-              <small class="hint-text">Paste image web address</small>
-            </div>
-          </div>
-          <button type="submit" class="submit-btn" id="admin-submit-btn">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Add Song
-          </button>
-        </form>
-      </div>
-
-      <div class="admin-tab-content hidden" id="content-manage-songs">
-        <div class="admin-song-list" id="admin-song-list">
-          <!-- Populated dynamically via JS -->
-        </div>
-      </div>
     </div>
   </div>
 
@@ -535,7 +486,12 @@
             <p id="lyrics-artist">Artist Name</p>
           </div>
         </div>
-        <span class="lyrics-synced-badge" id="lyrics-status-badge"><i class="fa-solid fa-bolt"></i> Real-time Synced</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="lyrics-translate-btn" class="lyrics-action-pill" title="Toggle Meaning / Translation (अर्थ दिखाएं)">
+            <i class="fa-solid fa-language"></i> Meaning (अर्थ)
+          </button>
+          <span class="lyrics-synced-badge" id="lyrics-status-badge"><i class="fa-solid fa-bolt"></i> Real-time Synced</span>
+        </div>
       </div>
 
       <div class="lyrics-container" id="lyrics-container">

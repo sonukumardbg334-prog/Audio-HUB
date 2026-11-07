@@ -915,6 +915,167 @@ app.get('/api/lyrics', async (req, res) => {
   }
 });
 
+// Translation endpoint for Dual Lyrics
+app.post('/api/lyrics/translate', async (req, res) => {
+  try {
+    const { lines, targetLang } = req.body;
+    if (!Array.isArray(lines) || lines.length === 0) {
+      return res.status(400).json({ success: false, error: 'Lines array required' });
+    }
+
+    const lang = targetLang === 'hi' ? 'hi' : 'en';
+    const chunkSize = 25;
+    const translatedResults = [];
+
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      const chunk = lines.slice(i, i + chunkSize);
+      const joinedText = chunk.join('\n');
+
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(joinedText)}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          const translatedBatch = (data[0] || []).map((x) => x[0]).join('');
+          const splitLines = translatedBatch.split('\n');
+
+          for (let j = 0; j < chunk.length; j++) {
+            translatedResults.push(splitLines[j] ? splitLines[j].trim() : chunk[j]);
+          }
+        } else {
+          translatedResults.push(...chunk);
+        }
+      } catch (err) {
+        translatedResults.push(...chunk);
+      }
+    }
+
+    return res.json({
+      success: true,
+      targetLang: lang,
+      translations: translatedResults,
+      translatedLines: translatedResults
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// 8. ARTIST PROFILE & DISCOGRAPHY API
+// ==========================================
+app.get('/api/artist', async (req, res) => {
+  try {
+    const artistName = (req.query.name || '').trim();
+    if (!artistName) {
+      return res.status(400).json({ success: false, error: 'Artist name required' });
+    }
+
+    // Step 1: Search for artist on JioSaavn
+    const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getArtistResults&q=${encodeURIComponent(artistName)}&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=1&p=1`;
+    const searchRes = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    let artistId = null;
+    let initialInfo = null;
+
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      if (searchData.results && searchData.results.length > 0) {
+        artistId = searchData.results[0].id;
+        initialInfo = searchData.results[0];
+      }
+    }
+
+    if (artistId) {
+      const detailsUrl = `https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&artistId=${artistId}&_format=json&_marker=0&api_version=4&ctx=web6dot0&n_song=20&n_album=8`;
+      const detailsRes = await fetch(detailsUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+
+      if (detailsRes.ok) {
+        const detailsData = await detailsRes.json();
+        const rawSongs = detailsData.topSongs || [];
+        const topTracks = rawSongs.map((item, idx) => formatJioSaavnSong(item, idx)).filter((s) => !!s && !!s.src);
+
+        let artistImg = detailsData.image || (initialInfo ? initialInfo.image : '');
+        if (artistImg) {
+          artistImg = artistImg.replace(/50x50|150x150/g, '500x500');
+        }
+
+        const albums = (detailsData.topAlbums || []).map((alb, i) => ({
+          id: alb.id || `alb-${i}`,
+          title: alb.title || alb.name,
+          year: alb.year || '',
+          cover: alb.image ? alb.image.replace(/50x50|150x150/g, '500x500') : 'https://via.placeholder.com/300'
+        }));
+
+        const fanCount = detailsData.follower_count || detailsData.fan_count || '2500000';
+        let formattedFans = fanCount;
+        const num = Number(fanCount);
+        if (!isNaN(num) && num > 0) {
+          if (num >= 1000000) {
+            formattedFans = (num / 1000000).toFixed(1) + 'M';
+          } else if (num >= 1000) {
+            formattedFans = (num / 1000).toFixed(1) + 'K';
+          }
+        }
+
+        return res.json({
+          success: true,
+          artist: {
+            name: detailsData.name || artistName,
+            id: artistId,
+            image: artistImg || 'https://via.placeholder.com/500',
+            bio: detailsData.bio ? (Array.isArray(detailsData.bio) ? detailsData.bio[0]?.text : detailsData.bio) : null,
+            monthlyListeners: formattedFans,
+            topTracks,
+            albums
+          }
+        });
+      }
+    }
+
+    // Fallback search
+    const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(artistName)}&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=20&p=1`;
+    const resp = await fetch(saavnUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && Array.isArray(data.results) && data.results.length > 0) {
+        const topTracks = data.results.map((item, idx) => formatJioSaavnSong(item, idx)).filter((s) => !!s && !!s.src);
+        const firstCover = topTracks[0]?.cover || 'https://via.placeholder.com/500';
+
+        return res.json({
+          success: true,
+          artist: {
+            name: artistName,
+            id: 'fallback-artist',
+            image: firstCover,
+            bio: `Explore the greatest tracks and hits by ${artistName}.`,
+            monthlyListeners: '2.5M',
+            topTracks,
+            albums: []
+          }
+        });
+      }
+    }
+
+    return res.status(404).json({ success: false, error: 'Artist not found' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ==========================================
 // 8. AI SMART PLAYLIST GENERATOR
 // ==========================================
