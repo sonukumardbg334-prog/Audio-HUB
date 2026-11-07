@@ -921,6 +921,10 @@ function loadTrack(index) {
   });
 
   updateMediaSession(track);
+  if (typeof updateVizMeta === 'function') updateVizMeta();
+  if (typeof lyricsModal !== 'undefined' && lyricsModal && !lyricsModal.classList.contains('hidden')) {
+    fetchLyricsForTrack(track);
+  }
 }
 
 function playAudio() {
@@ -940,8 +944,20 @@ function playAudio() {
     const cur = trackList[currentTrackIndex];
     if (cur) {
       addToLibrary(cur);
+      addToRecentlyPlayed(cur);
       updateMediaSession(cur);
       document.title = `▶ ${cur.title} - ${cur.artist}`;
+      if (typeof updateVizMeta === 'function') updateVizMeta();
+
+      // If Party Mode is active, broadcast
+      if (typeof partySocket !== 'undefined' && partySocket && activePartyRoomId) {
+        partySocket.emit('sync-playback', {
+          roomId: activePartyRoomId,
+          track: cur,
+          isPlaying: true,
+          currentTime: audio.currentTime
+        });
+      }
     }
   }).catch((err) => {
     console.warn("Playback error/aborted:", err.message);
@@ -957,6 +973,16 @@ function pauseAudio() {
   playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
   playerStore.setState({ isPlaying: false });
   document.title = 'Spotify 2.0 - Web Player';
+  if (typeof updateVizMeta === 'function') updateVizMeta();
+
+  if (typeof partySocket !== 'undefined' && partySocket && activePartyRoomId) {
+    partySocket.emit('sync-playback', {
+      roomId: activePartyRoomId,
+      track: trackList[currentTrackIndex],
+      isPlaying: false,
+      currentTime: audio.currentTime
+    });
+  }
 }
 
 function togglePlay() {
@@ -1003,6 +1029,19 @@ audio.addEventListener('timeupdate', () => {
     progressBar.value = progressPercent;
     currentTimeEl.innerText = formatTime(audio.currentTime);
     totalTimeEl.innerText = formatTime(audio.duration);
+
+    // Live Synced Lyrics Scroll
+    if (typeof updateSyncedLyrics === 'function') {
+      updateSyncedLyrics(audio.currentTime);
+    }
+
+    // DJ Crossfade Transition check
+    if (typeof crossfadeDuration !== 'undefined' && crossfadeDuration > 0 && audio.duration > crossfadeDuration * 2) {
+      const timeLeft = audio.duration - audio.currentTime;
+      if (timeLeft <= crossfadeDuration && !isCrossfading) {
+        handleCrossfadeTransition();
+      }
+    }
 
     // Periodically sync currentTime with global state every 2 seconds
     const now = Date.now();
@@ -2515,6 +2554,677 @@ if (sidebarEl) {
     });
   });
 }
+
+// ==========================================
+// 17. RECENTLY PLAYED HISTORY
+// ==========================================
+const RECENT_HISTORY_KEY = 'spotify_recently_played_history';
+
+function getRecentlyPlayed() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_HISTORY_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function addToRecentlyPlayed(track) {
+  if (!track || !track.title) return;
+  let history = getRecentlyPlayed();
+  history = history.filter((s) => s.id !== track.id && s.title !== track.title);
+  history.unshift({
+    ...track,
+    playedAt: Date.now()
+  });
+  if (history.length > 50) history = history.slice(0, 50);
+  try {
+    localStorage.setItem(RECENT_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {}
+}
+
+function renderRecentlyPlayed() {
+  sectionTitle.innerHTML = `
+    <span>Recently Played History</span>
+    <button class="history-clear-btn" id="btn-clear-history"><i class="fa-solid fa-trash-can"></i> Clear History</button>
+  `;
+  document.querySelectorAll('.nav-menu a, .fixed-playlists li').forEach((el) => el.classList.remove('active'));
+  const navHist = document.getElementById('nav-history');
+  if (navHist) navHist.classList.add('active');
+
+  const history = getRecentlyPlayed();
+  if (history.length === 0) {
+    trackGrid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 50px 0; color: #b3b3b3;">
+        <i class="fa-solid fa-clock-rotate-left" style="font-size: 2.5rem; margin-bottom: 12px; color: #555; display: block;"></i>
+        <p>No recently played songs yet.</p>
+        <p style="font-size: 13px; color: #777; margin-top: 5px;">Songs you listen to will appear here automatically!</p>
+      </div>
+    `;
+    return;
+  }
+
+  trackList = history;
+  renderTracks();
+
+  const clearBtn = document.getElementById('btn-clear-history');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      localStorage.removeItem(RECENT_HISTORY_KEY);
+      showToast('Listening history cleared', 'info');
+      renderRecentlyPlayed();
+    });
+  }
+}
+
+const navHistoryBtn = document.getElementById('nav-history');
+if (navHistoryBtn) {
+  navHistoryBtn.addEventListener('click', renderRecentlyPlayed);
+}
+
+// ==========================================
+// 18. LIVE SYNCED LYRICS ( बोल / लिरिक्स )
+// ==========================================
+const lyricsBtn = document.getElementById('lyrics-btn');
+const lyricsModal = document.getElementById('lyrics-modal');
+const closeLyricsBtn = document.getElementById('close-lyrics-btn');
+const lyricsContainer = document.getElementById('lyrics-container');
+const lyricsTitle = document.getElementById('lyrics-title');
+const lyricsArtist = document.getElementById('lyrics-artist');
+const lyricsCoverArt = document.getElementById('lyrics-cover-art');
+const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
+
+let currentLyricsData = null;
+
+function parseLrc(lrcText) {
+  if (!lrcText) return [];
+  const lines = lrcText.split('\n');
+  const result = [];
+  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+
+  for (const line of lines) {
+    const match = timeRegex.exec(line);
+    if (match) {
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseInt(match[2], 10);
+      const milliseconds = parseInt(match[3].padEnd(3, '0').slice(0, 3), 10);
+      const timeInSec = minutes * 60 + seconds + milliseconds / 1000;
+      const text = line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').trim();
+      if (text) {
+        result.push({ time: timeInSec, text });
+      }
+    }
+  }
+  return result.sort((a, b) => a.time - b.time);
+}
+
+async function fetchLyricsForTrack(track) {
+  if (!track || !track.title) return;
+  if (lyricsTitle) lyricsTitle.innerText = track.title;
+  if (lyricsArtist) lyricsArtist.innerText = track.artist || 'Unknown';
+  if (lyricsCoverArt && track.cover) lyricsCoverArt.src = track.cover;
+
+  if (lyricsContainer) {
+    lyricsContainer.innerHTML = `
+      <div class="lyrics-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Fetching real-time lyrics for "${track.title}"...</p>
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/lyrics?title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist || '')}`);
+    const data = await res.json();
+
+    if (data.success && data.syncedLyrics) {
+      const parsed = parseLrc(data.syncedLyrics);
+      currentLyricsData = { isSynced: true, parsedLines: parsed, plainLyrics: null };
+      renderSyncedLyrics(parsed);
+      if (lyricsStatusBadge) {
+        lyricsStatusBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> Real-time Synced';
+        lyricsStatusBadge.style.color = '#1db954';
+      }
+    } else if (data.success && data.plainLyrics) {
+      currentLyricsData = { isSynced: false, parsedLines: [], plainLyrics: data.plainLyrics };
+      if (lyricsContainer) {
+        lyricsContainer.innerHTML = `<div class="plain-lyrics-view">${data.plainLyrics}</div>`;
+      }
+      if (lyricsStatusBadge) {
+        lyricsStatusBadge.innerHTML = '<i class="fa-regular fa-file-lines"></i> Plain Lyrics';
+        lyricsStatusBadge.style.color = '#f59e0b';
+      }
+    } else {
+      throw new Error('No lyrics found');
+    }
+  } catch (err) {
+    currentLyricsData = null;
+    if (lyricsContainer) {
+      lyricsContainer.innerHTML = `
+        <div class="plain-lyrics-view" style="color: #888;">
+          🎵 Now playing: <b>${track.title}</b><br><br>
+          Lyrics currently not available for this song version.<br>
+          Sing along with the groove! 🎶
+        </div>
+      `;
+    }
+  }
+}
+
+function renderSyncedLyrics(parsedLines) {
+  if (!lyricsContainer) return;
+  lyricsContainer.innerHTML = '';
+  parsedLines.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.classList.add('lyric-line');
+    div.id = `lyric-line-${index}`;
+    div.innerText = item.text;
+    div.addEventListener('click', () => {
+      audio.currentTime = item.time;
+      if (!isPlaying) playAudio();
+    });
+    lyricsContainer.appendChild(div);
+  });
+}
+
+function updateSyncedLyrics(currentTime) {
+  if (!currentLyricsData || !currentLyricsData.isSynced || !currentLyricsData.parsedLines || !currentLyricsData.parsedLines.length) return;
+  const lines = currentLyricsData.parsedLines;
+  let activeIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (currentTime >= lines[i].time) {
+      activeIndex = i;
+    } else {
+      break;
+    }
+  }
+
+  if (activeIndex !== -1 && lyricsContainer) {
+    const prevActive = lyricsContainer.querySelector('.lyric-line.active');
+    const newActive = document.getElementById(`lyric-line-${activeIndex}`);
+
+    if (newActive && prevActive !== newActive) {
+      if (prevActive) prevActive.classList.remove('active');
+      newActive.classList.add('active');
+      newActive.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+if (lyricsBtn) {
+  lyricsBtn.addEventListener('click', () => {
+    const cur = trackList[currentTrackIndex];
+    if (cur) {
+      fetchLyricsForTrack(cur);
+    }
+    lyricsModal.classList.remove('hidden');
+  });
+}
+if (closeLyricsBtn) {
+  closeLyricsBtn.addEventListener('click', () => {
+    lyricsModal.classList.add('hidden');
+  });
+}
+
+// ==========================================
+// 19. PWA (PROGRESSIVE WEB APP)
+// ==========================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+      console.log('SW note:', err.message);
+    });
+  });
+}
+
+let deferredPwaPrompt = null;
+const pwaInstallBtn = document.getElementById('pwa-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  if (pwaInstallBtn) pwaInstallBtn.classList.remove('hidden');
+});
+
+if (pwaInstallBtn) {
+  pwaInstallBtn.addEventListener('click', async () => {
+    if (deferredPwaPrompt) {
+      deferredPwaPrompt.prompt();
+      const choice = await deferredPwaPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        showToast('🎉 Spotify app installed successfully!', 'success');
+      }
+      deferredPwaPrompt = null;
+      pwaInstallBtn.classList.add('hidden');
+    } else {
+      showToast('Tip: Use browser menu to "Install Spotify / Add to Home screen" 📲', 'info');
+    }
+  });
+}
+
+// ==========================================
+// 20. DJ CROSSFADE TRANSITION
+// ==========================================
+const crossfadeSlider = document.getElementById('crossfade-slider');
+const crossfadeValLabel = document.getElementById('crossfade-val-label');
+let crossfadeDuration = parseInt(localStorage.getItem('spotify_crossfade_duration') || '0', 10);
+let isCrossfading = false;
+
+if (crossfadeSlider && crossfadeValLabel) {
+  crossfadeSlider.value = crossfadeDuration;
+  crossfadeValLabel.innerText = crossfadeDuration > 0 ? `${crossfadeDuration}s` : '0s (Off)';
+
+  crossfadeSlider.addEventListener('input', (e) => {
+    crossfadeDuration = parseInt(e.target.value, 10);
+    localStorage.setItem('spotify_crossfade_duration', crossfadeDuration);
+    crossfadeValLabel.innerText = crossfadeDuration > 0 ? `${crossfadeDuration}s` : '0s (Off)';
+  });
+}
+
+function handleCrossfadeTransition() {
+  if (isCrossfading || crossfadeDuration <= 0) return;
+  isCrossfading = true;
+
+  const initialVolume = audio.volume;
+  const fadeSteps = 10;
+  const stepTime = (crossfadeDuration * 1000) / fadeSteps;
+  let currentStep = 0;
+
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    const stepVolume = Math.max(0, initialVolume * (1 - currentStep / fadeSteps));
+    audio.volume = stepVolume;
+
+    if (currentStep >= fadeSteps) {
+      clearInterval(fadeInterval);
+      audio.volume = initialVolume;
+      isCrossfading = false;
+      playNextTrack();
+    }
+  }, stepTime);
+}
+
+// ==========================================
+// 21. AI SMART PLAYLIST GENERATOR
+// ==========================================
+const openAiPlaylistBtn = document.getElementById('open-ai-playlist-btn');
+const aiPlaylistModal = document.getElementById('ai-playlist-modal');
+const closeAiPlaylistBtn = document.getElementById('close-ai-playlist-btn');
+const aiPromptInput = document.getElementById('ai-prompt-input');
+const aiGenerateBtn = document.getElementById('ai-generate-btn');
+const aiLoading = document.getElementById('ai-loading');
+
+if (openAiPlaylistBtn) {
+  openAiPlaylistBtn.addEventListener('click', () => {
+    aiPlaylistModal.classList.remove('hidden');
+    if (aiPromptInput) aiPromptInput.focus();
+  });
+}
+if (closeAiPlaylistBtn) {
+  closeAiPlaylistBtn.addEventListener('click', () => {
+    aiPlaylistModal.classList.add('hidden');
+  });
+}
+
+document.querySelectorAll('.ai-chip').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    if (aiPromptInput) aiPromptInput.value = chip.getAttribute('data-idea');
+    if (aiGenerateBtn) aiGenerateBtn.click();
+  });
+});
+
+if (aiGenerateBtn) {
+  aiGenerateBtn.addEventListener('click', async () => {
+    const prompt = aiPromptInput ? aiPromptInput.value.trim() : '';
+    if (!prompt) {
+      showToast('Please enter a vibe, mood, or idea for the AI playlist!', 'info');
+      return;
+    }
+
+    aiGenerateBtn.disabled = true;
+    if (aiLoading) aiLoading.classList.remove('hidden');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai-playlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+
+      if (data.success && data.songs && data.songs.length > 0) {
+        trackList = data.songs;
+        sectionTitle.innerText = data.title;
+        renderTracks();
+        loadTrack(0);
+        playAudio();
+        aiPlaylistModal.classList.add('hidden');
+        showToast(`✨ Generated ${data.songs.length} tracks for "${prompt}"!`, 'success');
+      } else {
+        showToast('Could not find enough tracks for that prompt. Try another vibe!', 'error');
+      }
+    } catch (err) {
+      showToast('Error generating AI playlist: ' + err.message, 'error');
+    } finally {
+      aiGenerateBtn.disabled = false;
+      if (aiLoading) aiLoading.classList.add('hidden');
+    }
+  });
+}
+
+// ==========================================
+// 22. LISTEN TOGETHER / PARTY ROOMS (Socket.io)
+// ==========================================
+let partySocket = null;
+let activePartyRoomId = null;
+
+const openPartyBtn = document.getElementById('open-party-btn');
+const partyModal = document.getElementById('party-modal');
+const closePartyBtn = document.getElementById('close-party-btn');
+const partyJoinView = document.getElementById('party-join-view');
+const partyActiveView = document.getElementById('party-active-view');
+const btnCreatePartyRoom = document.getElementById('btn-create-party-room');
+const btnJoinPartyRoom = document.getElementById('btn-join-party-room');
+const partyRoomCodeInput = document.getElementById('party-room-code-input');
+const partyActiveCode = document.getElementById('party-active-code');
+const btnCopyRoomCode = document.getElementById('btn-copy-room-code');
+const btnLeavePartyRoom = document.getElementById('btn-leave-party-room');
+const partyUsersCount = document.getElementById('party-users-count');
+const partyUsersList = document.getElementById('party-users-list');
+const partyChatMessages = document.getElementById('party-chat-messages');
+const partyChatForm = document.getElementById('party-chat-form');
+const partyChatInput = document.getElementById('party-chat-input');
+
+function initPartySocket() {
+  if (partySocket || typeof io === 'undefined') return;
+
+  partySocket = io();
+
+  partySocket.on('room-state', (state) => {
+    activePartyRoomId = state.roomId;
+    if (partyActiveCode) partyActiveCode.innerText = state.roomId;
+    if (partyUsersCount) partyUsersCount.innerText = state.users.length;
+    if (partyUsersList) {
+      partyUsersList.innerHTML = state.users
+        .map((u) => `<li><i class="fa-solid fa-circle-user" style="color:#1db954;"></i> ${u}</li>`)
+        .join('');
+    }
+    if (partyJoinView && partyActiveView) {
+      partyJoinView.classList.add('hidden');
+      partyActiveView.classList.remove('hidden');
+    }
+    if (state.currentTrack && (!audio.src || !trackList[currentTrackIndex] || trackList[currentTrackIndex].src !== state.currentTrack.src)) {
+      trackList = [state.currentTrack, ...trackList.filter((t) => t.src !== state.currentTrack.src)];
+      loadTrack(0);
+      if (typeof state.currentTime === 'number') audio.currentTime = state.currentTime;
+      if (state.isPlaying) playAudio();
+    }
+  });
+
+  partySocket.on('playback-update', (data) => {
+    if (data.track && (!audio.src || !trackList[currentTrackIndex] || trackList[currentTrackIndex].src !== data.track.src)) {
+      trackList = [data.track, ...trackList.filter((t) => t.src !== data.track.src)];
+      loadTrack(0);
+    }
+    if (typeof data.currentTime === 'number') {
+      audio.currentTime = data.currentTime;
+    }
+    if (data.isPlaying && !isPlaying) {
+      playAudio();
+    } else if (!data.isPlaying && isPlaying) {
+      pauseAudio();
+    }
+    showToast(`👥 ${data.from} synced playback`, 'info');
+  });
+
+  partySocket.on('party-chat-msg', (msg) => {
+    if (partyChatMessages) {
+      const msgEl = document.createElement('div');
+      msgEl.classList.add('party-chat-msg');
+      msgEl.innerHTML = `<b>${msg.from}:</b> ${msg.text} <small style="color:#888; float:right;">${msg.time}</small>`;
+      partyChatMessages.appendChild(msgEl);
+      partyChatMessages.scrollTop = partyChatMessages.scrollHeight;
+    }
+  });
+}
+
+if (openPartyBtn) {
+  openPartyBtn.addEventListener('click', () => {
+    initPartySocket();
+    partyModal.classList.remove('hidden');
+  });
+}
+if (closePartyBtn) {
+  closePartyBtn.addEventListener('click', () => {
+    partyModal.classList.add('hidden');
+  });
+}
+
+if (btnCreatePartyRoom) {
+  btnCreatePartyRoom.addEventListener('click', () => {
+    initPartySocket();
+    const newRoomCode = 'PARTY-' + Math.floor(1000 + Math.random() * 9000);
+    const user = JSON.parse(sessionStorage.getItem('spotify_current_user') || '{}');
+    partySocket.emit('join-room', {
+      roomId: newRoomCode,
+      userName: user.name || 'Host'
+    });
+    showToast(`🎉 Room ${newRoomCode} created! Share the code with friends.`, 'success');
+  });
+}
+
+if (btnJoinPartyRoom) {
+  btnJoinPartyRoom.addEventListener('click', () => {
+    const code = partyRoomCodeInput.value.trim().toUpperCase();
+    if (!code) {
+      showToast('Please enter a room code!', 'error');
+      return;
+    }
+    initPartySocket();
+    const user = JSON.parse(sessionStorage.getItem('spotify_current_user') || '{}');
+    partySocket.emit('join-room', {
+      roomId: code,
+      userName: user.name || 'Friend'
+    });
+  });
+}
+
+if (btnCopyRoomCode) {
+  btnCopyRoomCode.addEventListener('click', () => {
+    if (activePartyRoomId) {
+      navigator.clipboard.writeText(activePartyRoomId);
+      showToast(`Copied room code "${activePartyRoomId}" to clipboard!`, 'success');
+    }
+  });
+}
+
+if (btnLeavePartyRoom) {
+  btnLeavePartyRoom.addEventListener('click', () => {
+    if (partySocket) {
+      partySocket.disconnect();
+      partySocket = null;
+    }
+    activePartyRoomId = null;
+    if (partyActiveView && partyJoinView) {
+      partyActiveView.classList.add('hidden');
+      partyJoinView.classList.remove('hidden');
+    }
+    showToast('Left party room', 'info');
+  });
+}
+
+if (partyChatForm) {
+  partyChatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = partyChatInput.value.trim();
+    if (text && partySocket && activePartyRoomId) {
+      partySocket.emit('send-party-chat', {
+        roomId: activePartyRoomId,
+        message: text
+      });
+      partyChatInput.value = '';
+    }
+  });
+}
+
+// ==========================================
+// 23. FLOATING MINI-PLAYER (Picture-in-Picture)
+// ==========================================
+const pipBtn = document.getElementById('pip-btn');
+const pipCanvas = document.getElementById('pip-canvas');
+const pipVideo = document.getElementById('pip-video');
+
+async function triggerPictureInPicture() {
+  try {
+    if (!pipCanvas || !pipVideo) return;
+    const ctx = pipCanvas.getContext('2d');
+
+    function drawPipFrame() {
+      ctx.fillStyle = '#121212';
+      ctx.fillRect(0, 0, 400, 400);
+
+      const cur = trackList[currentTrackIndex] || { title: 'No Song Playing', artist: 'Spotify 2.0' };
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = cur.cover || 'icon.svg';
+
+      img.onload = () => {
+        ctx.drawImage(img, 40, 30, 320, 240);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(cur.title.slice(0, 24), 40, 310);
+
+        ctx.fillStyle = '#1db954';
+        ctx.font = '16px sans-serif';
+        ctx.fillText(cur.artist.slice(0, 28), 40, 340);
+
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(40, 370, 320, 8);
+        const pct = audio.duration ? audio.currentTime / audio.duration : 0;
+        ctx.fillStyle = '#1db954';
+        ctx.fillRect(40, 370, 320 * pct, 8);
+      };
+    }
+
+    drawPipFrame();
+    const stream = pipCanvas.captureStream(10);
+    pipVideo.srcObject = stream;
+    await pipVideo.play();
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else {
+      await pipVideo.requestPictureInPicture();
+      showToast('Floating Mini-Player opened! 🪟', 'success');
+    }
+  } catch (err) {
+    showToast('Mini-player ready in browser PiP', 'info');
+  }
+}
+
+if (pipBtn) {
+  pipBtn.addEventListener('click', triggerPictureInPicture);
+}
+
+// ==========================================
+// 24. FULL-SCREEN NEON AUDIO VISUALIZER
+// ==========================================
+const fullscreenVizBtn = document.getElementById('fullscreen-viz-btn');
+const fullscreenVizOverlay = document.getElementById('fullscreen-viz-overlay');
+const closeFullscreenVizBtn = document.getElementById('close-fullscreen-viz-btn');
+const fullscreenVizCanvas = document.getElementById('fullscreen-viz-canvas');
+const vizTitle = document.getElementById('viz-title');
+const vizArtist = document.getElementById('viz-artist');
+const vizCoverArt = document.getElementById('viz-cover-art');
+const vizPlayBtn = document.getElementById('viz-play-btn');
+const vizPrevBtn = document.getElementById('viz-prev-btn');
+const vizNextBtn = document.getElementById('viz-next-btn');
+
+let isFullscreenVizActive = false;
+let vizAnimationId = null;
+
+function updateVizMeta() {
+  const cur = trackList[currentTrackIndex];
+  if (!cur) return;
+  if (vizTitle) vizTitle.innerText = cur.title;
+  if (vizArtist) vizArtist.innerText = cur.artist;
+  if (vizCoverArt && cur.cover) vizCoverArt.src = cur.cover;
+  if (vizPlayBtn) {
+    vizPlayBtn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+  }
+}
+
+function startFullscreenViz() {
+  if (!fullscreenVizCanvas) return;
+  initVisualizer();
+  isFullscreenVizActive = true;
+  updateVizMeta();
+  fullscreenVizOverlay.classList.remove('hidden');
+
+  const canvas = fullscreenVizCanvas;
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const bufferLength = analyser ? analyser.frequencyBinCount : 128;
+  const dataArray = new Uint8Array(bufferLength);
+
+  function draw() {
+    if (!isFullscreenVizActive) return;
+    vizAnimationId = requestAnimationFrame(draw);
+
+    if (analyser) {
+      analyser.getByteFrequencyData(dataArray);
+    } else {
+      for (let i = 0; i < bufferLength; i++) dataArray[i] = Math.random() * 60;
+    }
+
+    ctx.fillStyle = 'rgba(8, 8, 8, 0.25)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 130;
+
+    const bars = 80;
+    for (let i = 0; i < bars; i++) {
+      const value = dataArray[i % bufferLength] || 10;
+      const barHeight = (value / 255) * 120;
+      const rad = ((Math.PI * 2) / bars) * i;
+
+      const x1 = centerX + Math.cos(rad) * radius;
+      const y1 = centerY + Math.sin(rad) * radius;
+      const x2 = centerX + Math.cos(rad) * (radius + barHeight);
+      const y2 = centerY + Math.sin(rad) * (radius + barHeight);
+
+      const hue = (i / bars) * 360;
+      ctx.strokeStyle = `hsl(${hue}, 85%, 55%)`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  }
+
+  draw();
+}
+
+function stopFullscreenViz() {
+  isFullscreenVizActive = false;
+  if (vizAnimationId) cancelAnimationFrame(vizAnimationId);
+  fullscreenVizOverlay.classList.add('hidden');
+}
+
+if (fullscreenVizBtn) fullscreenVizBtn.addEventListener('click', startFullscreenViz);
+if (closeFullscreenVizBtn) closeFullscreenVizBtn.addEventListener('click', stopFullscreenViz);
+if (vizPlayBtn) vizPlayBtn.addEventListener('click', () => { togglePlay(); updateVizMeta(); });
+if (vizPrevBtn) vizPrevBtn.addEventListener('click', () => { playPrevTrack(); updateVizMeta(); });
+if (vizNextBtn) vizNextBtn.addEventListener('click', () => { playNextTrack(); updateVizMeta(); });
 
 // Initializations
 checkAuthState();

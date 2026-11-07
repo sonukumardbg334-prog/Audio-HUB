@@ -951,14 +951,19 @@ app.post('/api/ai-playlist', async (req, res) => {
     let allSongs = [];
     for (const term of searchTerms) {
       try {
-        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(term)}&_format=json&_marker=0&api_version=4&p=1&n=12`;
-        const resp = await fetch(saavnUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(term)}&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=12&p=1`;
+        const resp = await fetch(saavnUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'application/json'
+          }
+        });
         if (resp.ok) {
           const data = await resp.json();
-          if (data && data.results) {
-            for (const item of data.results) {
-              const parsed = parseJioSaavnSong(item);
-              if (parsed && !allSongs.some((s) => s.id === parsed.id || s.title.toLowerCase() === parsed.title.toLowerCase())) {
+          if (data && Array.isArray(data.results)) {
+            for (let i = 0; i < data.results.length; i++) {
+              const parsed = formatJioSaavnSong(data.results[i], i);
+              if (parsed && parsed.src && !allSongs.some((s) => s.id === parsed.id || s.title.toLowerCase() === parsed.title.toLowerCase())) {
                 allSongs.push(parsed);
               }
             }
@@ -971,15 +976,25 @@ app.post('/api/ai-playlist', async (req, res) => {
     // Fallback if needed
     if (allSongs.length === 0) {
       try {
-        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(cleanPrompt)}&_format=json&_marker=0&api_version=4&p=1&n=15`;
-        const resp = await fetch(saavnUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(cleanPrompt)}&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=15&p=1`;
+        const resp = await fetch(saavnUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'application/json'
+          }
+        });
         if (resp.ok) {
           const data = await resp.json();
-          if (data && data.results) {
-            allSongs = data.results.map(parseJioSaavnSong).filter(Boolean);
+          if (data && Array.isArray(data.results)) {
+            allSongs = data.results.map((item, idx) => formatJioSaavnSong(item, idx)).filter((s) => !!s && !!s.src);
           }
         }
       } catch (err) {}
+    }
+
+    // Secondary fallback to iTunes
+    if (allSongs.length === 0) {
+      allSongs = await fallbackItunesSearch(cleanPrompt, 15);
     }
 
     const capitalized = cleanPrompt.charAt(0).toUpperCase() + cleanPrompt.slice(1);
