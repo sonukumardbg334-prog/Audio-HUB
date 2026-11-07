@@ -279,11 +279,56 @@ themeSelect.addEventListener('change', () => {
 // 1. NAVIGATION & MENU LOGIC
 // ==========================================
 
+const bnavHome = document.getElementById('bnav-home');
+const bnavSearch = document.getElementById('bnav-search');
+const bnavLiked = document.getElementById('bnav-liked');
+const bnavLibrary = document.getElementById('bnav-library');
+
+function updateBottomNavActive(activeBtn) {
+  document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
 function updateActiveNav(activeElement) {
   if (typeof closeArtistProfile === 'function') closeArtistProfile();
   const navLinks = document.querySelectorAll('.nav-menu a, .playlists li');
   navLinks.forEach(link => link.classList.remove('active'));
   if (activeElement) activeElement.classList.add('active');
+
+  // Sync mobile bottom nav
+  if (activeElement === navHome && bnavHome) updateBottomNavActive(bnavHome);
+  else if (activeElement === navLiked && bnavLiked) updateBottomNavActive(bnavLiked);
+  else if (activeElement === navLibrary && bnavLibrary) updateBottomNavActive(bnavLibrary);
+}
+
+if (bnavHome) {
+  bnavHome.addEventListener('click', () => {
+    updateBottomNavActive(bnavHome);
+    navHome.click();
+  });
+}
+if (bnavSearch) {
+  bnavSearch.addEventListener('click', () => {
+    updateBottomNavActive(bnavSearch);
+    if (typeof closeArtistProfile === 'function') closeArtistProfile();
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => searchInput.focus(), 300);
+    }
+  });
+}
+if (bnavLiked) {
+  bnavLiked.addEventListener('click', () => {
+    updateBottomNavActive(bnavLiked);
+    navLiked.click();
+  });
+}
+if (bnavLibrary) {
+  bnavLibrary.addEventListener('click', () => {
+    updateBottomNavActive(bnavLibrary);
+    navLibrary.click();
+  });
 }
 
 navHome.addEventListener('click', (e) => {
@@ -750,30 +795,41 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-function updateMediaSession(track) {
-  if (!('mediaSession' in navigator) || !track) return;
+function playNextSong() {
+  playNextTrack();
+}
+
+function playPrevSong() {
+  playPrevTrack();
+}
+
+function updateMediaSession(song) {
+  if (!('mediaSession' in navigator) || !song) return;
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: track.title || 'Unknown Title',
-      artist: track.artist || 'Unknown Artist',
-      album: track.album || 'Spotify 2.0',
+      title: song.title || 'Unknown Title',
+      artist: song.artist || 'Unknown Artist',
+      album: song.album || 'Spotify Web',
       artwork: [
-        { src: track.cover || 'https://via.placeholder.com/96', sizes: '96x96', type: 'image/jpeg' },
-        { src: track.cover || 'https://via.placeholder.com/128', sizes: '128x128', type: 'image/jpeg' },
-        { src: track.cover || 'https://via.placeholder.com/256', sizes: '256x256', type: 'image/jpeg' },
-        { src: track.cover || 'https://via.placeholder.com/512', sizes: '512x512', type: 'image/jpeg' }
+        { src: song.cover || '/icons/default-cover.png', sizes: '512x512', type: 'image/jpeg' },
+        { src: song.cover || 'https://via.placeholder.com/256', sizes: '256x256', type: 'image/jpeg' },
+        { src: song.cover || 'https://via.placeholder.com/96', sizes: '96x96', type: 'image/jpeg' }
       ]
     });
 
-    navigator.mediaSession.setActionHandler('play', () => playAudio());
-    navigator.mediaSession.setActionHandler('pause', () => pauseAudio());
-    navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
-    navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
+    navigator.mediaSession.setActionHandler('play', () => (typeof playAudio === 'function' ? playAudio() : audio.play()));
+    navigator.mediaSession.setActionHandler('pause', () => (typeof pauseAudio === 'function' ? pauseAudio() : audio.pause()));
+    navigator.mediaSession.setActionHandler('nexttrack', () => playNextSong());
+    navigator.mediaSession.setActionHandler('previoustrack', () => playPrevSong());
     navigator.mediaSession.setActionHandler('seekto', (details) => {
-      if (details.seekTime && audio.duration) {
-        audio.currentTime = details.seekTime;
+      if (details.fastSeek && 'fastSeek' in audio) {
+        audio.fastSeek(details.seekTime);
+        return;
       }
+      audio.currentTime = details.seekTime;
     });
+
+    navigator.mediaSession.playbackState = !audio.paused ? 'playing' : 'paused';
   } catch (e) {
     console.warn("MediaSession API note:", e.message);
   }
@@ -910,6 +966,7 @@ function playAudio() {
       addToLibrary(cur);
       addToRecentlyPlayed(cur);
       updateMediaSession(cur);
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
       document.title = `▶ ${cur.title} - ${cur.artist}`;
       if (typeof updateVizMeta === 'function') updateVizMeta();
 
@@ -934,6 +991,7 @@ function playAudio() {
 function pauseAudio() {
   audio.pause();
   isPlaying = false;
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
   playerStore.setState({ isPlaying: false });
   document.title = 'Spotify 2.0 - Web Player';
@@ -3246,6 +3304,37 @@ if (bottomTrackArtist) {
     }
   });
 }
+
+// ==========================================
+// 24. MOBILE HORIZONTAL SWIPE GESTURE SUPPORT
+// ==========================================
+function initSliderTouchGestures() {
+  const sliders = document.querySelectorAll('.cards-container, .music-row');
+  sliders.forEach((slider) => {
+    let startX = 0;
+    let startY = 0;
+
+    slider.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    slider.addEventListener('touchmove', (e) => {
+      let touchX = e.touches[0].clientX;
+      let touchY = e.touches[0].clientY;
+
+      let diffX = startX - touchX;
+      let diffY = startY - touchY;
+
+      // Agar user left ya right swipe kar raha hai, toh browser ko upar-niche scroll karne se roko
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        // Left / Right drag detect hua
+      }
+    }, { passive: true });
+  });
+}
+
+initSliderTouchGestures();
 
 // Initializations
 checkAuthState();

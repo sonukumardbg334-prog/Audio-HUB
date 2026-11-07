@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121212">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
   <title>SPOTIFY - Beyond Music</title>
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1db954">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 
   <link rel="stylesheet" href="style.css">
   <!-- Font Awesome Icons -->
@@ -50,7 +59,7 @@
 
     <!-- Main Content Area -->
     <main class="main-content" id="main-content">
-      <header class="top-bar">
+      <header class="top-bar top-header">
         <div class="top-bar-left-wrap">
           <button id="mobile-menu-btn" class="mobile-menu-btn" title="Open Navigation Menu" aria-label="Open Navigation">
             <i class="fa-solid fa-bars"></i>
@@ -131,24 +140,24 @@
       <!-- Popular Tracks Horizontal Scroll Section -->
       <div class="music-section">
         <h2>Popular Tracks</h2>
-        <div class="music-row">
-          <div class="music-card">
+        <div class="music-row cards-container">
+          <div class="music-card card-item">
             <img src="album1.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'">
             <p>Track 1</p>
           </div>
-          <div class="music-card">
+          <div class="music-card card-item">
             <img src="album2.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300'">
             <p>Track 2</p>
           </div>
-          <div class="music-card">
+          <div class="music-card card-item">
             <img src="album3.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300'">
             <p>Track 3</p>
           </div>
-          <div class="music-card">
+          <div class="music-card card-item">
             <img src="album4.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=300'">
             <p>Track 4</p>
           </div>
-          <div class="music-card">
+          <div class="music-card card-item">
             <img src="album5.jpg" alt="Song Cover" style="width:100%; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'">
             <p>Track 5</p>
           </div>
@@ -193,7 +202,7 @@
   </div>
 
   <!-- Sticky Bottom Audio Player -->
-  <footer class="player-bar" id="player-bar">
+  <footer class="player-bar mini-player" id="player-bar">
     <div class="now-playing">
       <img src="https://via.placeholder.com/60" id="cover-art" alt="Album Cover">
       <div class="track-info">
@@ -260,6 +269,26 @@
       </div>
     </div>
   </footer>
+
+  <!-- Mobile Bottom Navigation Bar (Spotify Style) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bottom-nav-item active" id="bnav-home" title="Home">
+      <i class="fa-solid fa-house"></i>
+      <span>Home</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-search" title="Search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span>Search</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-liked" title="Liked Songs">
+      <i class="fa-solid fa-heart"></i>
+      <span>Liked</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-library" title="Your Library">
+      <i class="fa-solid fa-book-bookmark"></i>
+      <span>Library</span>
+    </button>
+  </nav>
 
   <!-- USER AUTH POPUP MODAL -->
   <div class="modal-overlay hidden" id="auth-modal">

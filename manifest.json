@@ -1,18 +1,21 @@
 {
-  "name": "Spotify - Beyond Music",
+  "name": "Spotify Streamer",
   "short_name": "Spotify",
-  "description": "Stream unlimited full-length songs with 8D Audio, Equalizer, Live Lyrics, and Party Mode",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
-  "theme_color": "#1db954",
-  "orientation": "portrait-primary",
+  "theme_color": "#121212",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
