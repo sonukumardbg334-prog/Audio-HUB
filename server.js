@@ -6,6 +6,8 @@ process.stdout?.on('error', (err) => { if (err.code === 'EPIPE') return; });
 process.stderr?.on('error', (err) => { if (err.code === 'EPIPE') return; });
 
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +15,13 @@ const CryptoJS = require('crypto-js');
 const multer = require('multer');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -836,15 +845,251 @@ app.delete('/api/user/playlists/:playlistId/song/:songId', (req, res) => {
 });
 
 // ==========================================
-// 7. SERVER STARTUP
+// 7. LYRICS API (Synced LRC & Plain Lyrics)
+// ==========================================
+app.get('/api/lyrics', async (req, res) => {
+  try {
+    const { title, artist, duration } = req.query;
+    if (!title) {
+      return res.status(400).json({ success: false, error: 'Title required' });
+    }
+
+    // Clean song title (remove film names, brackets, official video tag)
+    const cleanTitle = title
+      .replace(/\([^)]*\)|\[[^\]]*\]/g, '')
+      .replace(/ft\..*|feat\..*|from\s+.*|official.*|video.*/gi, '')
+      .trim();
+    const cleanArtist = (artist || '')
+      .replace(/\([^)]*\)|\[[^\]]*\]/g, '')
+      .replace(/,.*|&.*/g, '')
+      .trim();
+
+    // 1. Query Lrclib.net exact track
+    try {
+      const lrclibUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
+      const lrclibRes = await fetch(lrclibUrl, { headers: { 'User-Agent': 'SpotifyClone/1.0' } });
+      if (lrclibRes.ok) {
+        const data = await lrclibRes.json();
+        if (data && (data.syncedLyrics || data.plainLyrics)) {
+          return res.json({
+            success: true,
+            source: 'lrclib-direct',
+            isSynced: !!data.syncedLyrics,
+            syncedLyrics: data.syncedLyrics || null,
+            plainLyrics: data.plainLyrics || null
+          });
+        }
+      }
+    } catch (e) {}
+
+    // 2. Query Lrclib.net search
+    try {
+      const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`;
+      const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'SpotifyClone/1.0' } });
+      if (searchRes.ok) {
+        const searchList = await searchRes.json();
+        if (Array.isArray(searchList) && searchList.length > 0) {
+          const match = searchList.find((s) => s.syncedLyrics) || searchList[0];
+          if (match && (match.syncedLyrics || match.plainLyrics)) {
+            return res.json({
+              success: true,
+              source: 'lrclib-search',
+              isSynced: !!match.syncedLyrics,
+              syncedLyrics: match.syncedLyrics || null,
+              plainLyrics: match.plainLyrics || null
+            });
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 3. Fallback lyrics
+    return res.json({
+      success: true,
+      source: 'fallback',
+      isSynced: false,
+      plainLyrics: `🎵 Now playing: "${title}" by ${artist || 'Artist'}\n\nSing along and enjoy the music!\nSynchronized lyrics are not yet indexed for this specific remix/release.`
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// 8. AI SMART PLAYLIST GENERATOR
+// ==========================================
+app.post('/api/ai-playlist', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ success: false, error: 'Prompt is required' });
+    }
+
+    const cleanPrompt = prompt.trim();
+    const lower = cleanPrompt.toLowerCase();
+
+    // Map keywords to tailored search terms
+    let searchTerms = [cleanPrompt];
+    if (lower.includes('rain') || lower.includes('barish') || lower.includes('monsoon')) {
+      searchTerms = ['Baarish romantic', 'Rain Bollywood', 'Tum Hi Ho', 'Pehli Nazar Mein'];
+    } else if (lower.includes('gym') || lower.includes('workout') || lower.includes('fitness') || lower.includes('pump')) {
+      searchTerms = ['Gym Workout Bollywood', 'High Energy Punjabi', 'Dangal Title Track', 'Zinda Bhaag Milkha'];
+    } else if (lower.includes('party') || lower.includes('dance') || lower.includes('club') || lower.includes('shaadi')) {
+      searchTerms = ['Bollywood Party Dance', 'Punjabi Hits Club', 'Kala Chashma', 'Aankh Marey'];
+    } else if (lower.includes('sad') || lower.includes('broken') || lower.includes('dard') || lower.includes('alone')) {
+      searchTerms = ['Arijit Singh Sad', 'Soulful Bollywood', 'Channa Mereya', 'Bekhayali'];
+    } else if (lower.includes('lofi') || lower.includes('lo-fi') || lower.includes('chill') || lower.includes('study')) {
+      searchTerms = ['Bollywood Lofi Chill', 'Midnight Study Vibes', 'Kasoor Prateek Kuhad'];
+    } else if (lower.includes('romantic') || lower.includes('love') || lower.includes('pyaar') || lower.includes('date')) {
+      searchTerms = ['Romantic Bollywood Hits', 'Arijit Singh Love', 'Kesariya', 'Raataan Lambiyan'];
+    } else if (lower.includes('old') || lower.includes('90') || lower.includes('retro') || lower.includes('70') || lower.includes('80')) {
+      searchTerms = ['90s Bollywood Evergreen', 'Kishore Kumar Classics', 'Lata Mangeshkar Golden Hits'];
+    } else if (lower.includes('drive') || lower.includes('trip') || lower.includes('travel') || lower.includes('road')) {
+      searchTerms = ['Road Trip Bollywood', 'Dil Chahta Hai', 'Safarnama', 'Ilahi'];
+    }
+
+    let allSongs = [];
+    for (const term of searchTerms) {
+      try {
+        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(term)}&_format=json&_marker=0&api_version=4&p=1&n=12`;
+        const resp = await fetch(saavnUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.results) {
+            for (const item of data.results) {
+              const parsed = parseJioSaavnSong(item);
+              if (parsed && !allSongs.some((s) => s.id === parsed.id || s.title.toLowerCase() === parsed.title.toLowerCase())) {
+                allSongs.push(parsed);
+              }
+            }
+          }
+        }
+      } catch (err) {}
+      if (allSongs.length >= 18) break;
+    }
+
+    // Fallback if needed
+    if (allSongs.length === 0) {
+      try {
+        const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(cleanPrompt)}&_format=json&_marker=0&api_version=4&p=1&n=15`;
+        const resp = await fetch(saavnUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.results) {
+            allSongs = data.results.map(parseJioSaavnSong).filter(Boolean);
+          }
+        }
+      } catch (err) {}
+    }
+
+    const capitalized = cleanPrompt.charAt(0).toUpperCase() + cleanPrompt.slice(1);
+    const playlistTitle = `✨ ${capitalized} Mix`;
+    const playlistDesc = `AI-Curated Playlist featuring ${allSongs.length} hand-picked tracks for your mood: "${cleanPrompt}"`;
+
+    return res.json({
+      success: true,
+      title: playlistTitle,
+      description: playlistDesc,
+      prompt: cleanPrompt,
+      songs: allSongs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// 9. LISTEN TOGETHER / PARTY ROOMS (Socket.io)
+// ==========================================
+const partyRooms = new Map();
+
+io.on('connection', (socket) => {
+  socket.on('join-room', ({ roomId, userName }) => {
+    if (!roomId) return;
+    const cleanRoomId = roomId.toUpperCase().trim();
+    socket.join(cleanRoomId);
+    socket.roomId = cleanRoomId;
+    socket.userName = userName || `MusicFan-${socket.id.slice(-4)}`;
+
+    if (!partyRooms.has(cleanRoomId)) {
+      partyRooms.set(cleanRoomId, {
+        currentTrack: null,
+        isPlaying: false,
+        currentTime: 0,
+        hostId: socket.id,
+        users: new Map()
+      });
+    }
+
+    const room = partyRooms.get(cleanRoomId);
+    room.users.set(socket.id, socket.userName);
+
+    io.to(cleanRoomId).emit('room-state', {
+      roomId: cleanRoomId,
+      users: Array.from(room.users.values()),
+      currentTrack: room.currentTrack,
+      isPlaying: room.isPlaying,
+      currentTime: room.currentTime,
+      isHost: room.hostId === socket.id
+    });
+  });
+
+  socket.on('sync-playback', (data) => {
+    const { roomId, track, isPlaying, currentTime } = data;
+    if (roomId && partyRooms.has(roomId)) {
+      const room = partyRooms.get(roomId);
+      room.currentTrack = track;
+      room.isPlaying = isPlaying;
+      room.currentTime = currentTime;
+      socket.to(roomId).emit('playback-update', {
+        track,
+        isPlaying,
+        currentTime,
+        from: socket.userName
+      });
+    }
+  });
+
+  socket.on('send-party-chat', ({ roomId, message }) => {
+    if (roomId && message) {
+      io.to(roomId).emit('party-chat-msg', {
+        from: socket.userName,
+        text: message,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.roomId && partyRooms.has(socket.roomId)) {
+      const room = partyRooms.get(socket.roomId);
+      room.users.delete(socket.id);
+      if (room.users.size === 0) {
+        partyRooms.delete(socket.roomId);
+      } else {
+        io.to(socket.roomId).emit('room-state', {
+          roomId: socket.roomId,
+          users: Array.from(room.users.values()),
+          currentTrack: room.currentTrack,
+          isPlaying: room.isPlaying,
+          currentTime: room.currentTime
+        });
+      }
+    }
+  });
+});
+
+// ==========================================
+// 10. SERVER STARTUP
 // ==========================================
 initDb();
 
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`🎵 Music Streaming Server running at: http://localhost:${PORT}`);
   console.log(`🚀 Serving Full-length songs (No 30-second restriction)`);
-  console.log(`🛠️ Admin API Ready: Add & Delete custom tracks enabled`);
+  console.log(`🎤 Live Lyrics & AI Playlists API Active`);
+  console.log(`👥 Party Mode (Socket.io) Enabled`);
   console.log(`====================================================`);
 });
 

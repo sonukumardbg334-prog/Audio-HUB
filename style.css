@@ -178,6 +178,20 @@ body {
   gap: 20px;
 }
 
+.top-bar-left-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.mobile-menu-btn,
+.close-sidebar-btn,
+.sidebar-overlay {
+  display: none;
+}
+
 /* Search Box */
 .search-box {
   display: flex;
@@ -2010,4 +2024,375 @@ body[data-theme="light"] .toast-item {
   color: #121212;
   border-color: #d1d5db;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* ==========================================
+   MOBILE & RESPONSIVE LAYOUT (<= 768px)
+   ========================================== */
+@media (max-width: 768px) {
+  .app-container {
+    width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 120px);
+    padding-bottom: 125px; /* ensure content doesn't get covered by fixed bottom player */
+    overflow-x: hidden;
+  }
+
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .main-content {
+    width: 100% !important;
+    padding: 14px 12px;
+    overflow-y: visible;
+    min-height: calc(100vh - 125px);
+  }
+
+  /* Mobile Drawer Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -290px;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    background-color: #0b0b0b;
+    z-index: 99999;
+    box-shadow: 6px 0 30px rgba(0, 0, 0, 0.85);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99998;
+    backdrop-filter: blur(3px);
+  }
+
+  .sidebar-overlay.hidden {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #242424;
+    color: #ffffff;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .mobile-menu-btn:hover {
+    background: #333333;
+    color: #1db954;
+  }
+
+  .close-sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    background: #202020;
+    border: 1px solid #333;
+    border-radius: 50%;
+    color: #b3b3b3;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .close-sidebar-btn:hover {
+    color: #ffffff;
+    background: #2e2e2e;
+  }
+
+  /* Header & Top Bar */
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .top-bar-left-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .search-box {
+    max-width: 100%;
+    width: 100%;
+    padding: 8px 12px;
+  }
+
+  .search-box input {
+    font-size: 13.5px;
+  }
+
+  .header-right-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right-actions button,
+  .theme-control {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  /* Mood Filter Chips */
+  .mood-chips-container {
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mood-chip {
+    padding: 6px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* Track Grid: 2 clean columns on phones */
+  .track-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .card {
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .card h3 {
+    font-size: 13px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card p {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-actions-row {
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .card-action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  /* Sticky Bottom Audio Player Bar */
+  .player-bar {
+    height: auto;
+    min-height: 85px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    z-index: 9999;
+  }
+
+  .now-playing {
+    width: 58%;
+    gap: 8px;
+  }
+
+  .now-playing img {
+    width: 42px;
+    height: 42px;
+    border-radius: 4px;
+  }
+
+  .track-info h4 {
+    font-size: 12px;
+    max-width: 125px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .track-info p {
+    font-size: 10.5px;
+    max-width: 125px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .visualizer-canvas {
+    display: none;
+  }
+
+  .player-controls {
+    width: 40%;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  .buttons {
+    gap: 10px;
+  }
+
+  .buttons button {
+    font-size: 14px;
+  }
+
+  .buttons .play-pause {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .control-extra-btn,
+  .eight-d-btn {
+    display: none;
+  }
+
+  .progress-container {
+    width: 100%;
+    order: 3;
+    margin-top: 4px;
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  .player-right-controls {
+    display: flex;
+    width: 100%;
+    order: 4;
+    justify-content: space-around;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 6px;
+  }
+
+  .player-right-controls .volume-controls {
+    display: none; /* Mobile phones use hardware buttons */
+  }
+
+  .tool-btn,
+  .speed-btn {
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+
+  /* Modals on Mobile */
+  .modal-card {
+    width: 92% !important;
+    max-width: 92% !important;
+    padding: 22px 16px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-card input,
+  .modal-card select,
+  .modal-card textarea {
+    font-size: 15px; /* prevents auto-zoom on mobile safari */
+  }
+
+  /* Toast on Mobile */
+  .toast-container {
+    bottom: 125px;
+    width: 90%;
+    left: 50%;
+  }
+
+  .toast-item {
+    font-size: 12px;
+    padding: 10px 16px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* Light theme on mobile */
+  body[data-theme="light"] .sidebar {
+    background-color: #10271f;
+  }
+
+  body[data-theme="light"] .mobile-menu-btn {
+    background: #ffffff;
+    color: #17231e;
+    border-color: #d1d5db;
+  }
+
+  body[data-theme="light"] .close-sidebar-btn {
+    background: #f0fdf4;
+    color: #17231e;
+    border-color: #d1d5db;
+  }
+}
+
+@media (max-width: 480px) {
+  .track-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .card {
+    padding: 8px;
+  }
+
+  .now-playing {
+    width: 55%;
+  }
+
+  .player-controls {
+    width: 45%;
+  }
+
+  .track-info h4,
+  .track-info p {
+    max-width: 100px;
+  }
 }

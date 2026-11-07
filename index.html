@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPOTIFY - Beyond Music</title>
 
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1db954">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+
   <link rel="stylesheet" href="style.css">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +16,8 @@
 <body>
   <div class="app-container">
     <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+      <button id="close-sidebar-btn" class="close-sidebar-btn" title="Close Menu" aria-label="Close Navigation">&times;</button>
       <div class="logo">
         <i class="fa-solid fa-compact-disc"></i>
         <span>Spotify</span>
@@ -34,6 +39,7 @@
           <li id="nav-liked"><i class="fa-solid fa-heart"></i> Liked Songs</li>
           <li id="nav-trending"><i class="fa-solid fa-fire"></i> Top Trending</li>
           <li id="nav-custom"><i class="fa-solid fa-star"></i> Featured Hits</li>
+          <li id="nav-history"><i class="fa-solid fa-clock-rotate-left"></i> Recently Played</li>
         </ul>
         <p class="playlist-subtitle">MY PLAYLISTS</p>
         <ul id="user-playlists-list" class="user-playlists-list">
@@ -41,20 +47,26 @@
         </ul>
       </div>
     </aside>
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
 
     <!-- Main Content Area -->
     <main class="main-content" id="main-content">
       <header class="top-bar">
-        <!-- Live Search Input + Voice Search -->
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="search-input" placeholder="Search new songs, artists, or albums..." autocomplete="off">
-          <button id="voice-search-btn" class="voice-search-btn" title="Voice Search (बोलकर सर्च करें)">
-            <i class="fa-solid fa-microphone"></i>
+        <div class="top-bar-left-wrap">
+          <button id="mobile-menu-btn" class="mobile-menu-btn" title="Open Navigation Menu" aria-label="Open Navigation">
+            <i class="fa-solid fa-bars"></i>
           </button>
-          <button id="search-btn">Search</button>
-          <!-- Live Search Options / Auto-complete Dropdown -->
-          <div id="search-suggestions" class="search-suggestions hidden"></div>
+          <!-- Live Search Input + Voice Search -->
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-input" placeholder="Search new songs, artists, or albums..." autocomplete="off">
+            <button id="voice-search-btn" class="voice-search-btn" title="Voice Search (बोलकर सर्च करें)">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button id="search-btn">Search</button>
+            <!-- Live Search Options / Auto-complete Dropdown -->
+            <div id="search-suggestions" class="search-suggestions hidden"></div>
+          </div>
         </div>
 
         <div class="header-right-actions">

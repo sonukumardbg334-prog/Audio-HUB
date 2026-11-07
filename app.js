@@ -2480,8 +2480,41 @@ document.querySelectorAll('.modal-card').forEach((card) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.add('hidden'));
+    closeMobileSidebar();
   }
 });
+
+// ==========================================
+// 16. MOBILE DRAWER NAVIGATION
+// ==========================================
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+const sidebarEl = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+function openMobileSidebar() {
+  if (sidebarEl) sidebarEl.classList.add('open');
+  if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+}
+
+function closeMobileSidebar() {
+  if (sidebarEl) sidebarEl.classList.remove('open');
+  if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+}
+
+if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileSidebar);
+if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+if (sidebarEl) {
+  sidebarEl.querySelectorAll('a, li').forEach((item) => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeMobileSidebar();
+      }
+    });
+  });
+}
 
 // Initializations
 checkAuthState();
