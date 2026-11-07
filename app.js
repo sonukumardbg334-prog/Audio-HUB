@@ -721,11 +721,11 @@ function renderTracks() {
     const isLiked = likedSongs.some(s => s.src === track.src);
     const isCustom = track.source === 'custom';
     const card = document.createElement('div');
-    card.classList.add('card');
+    card.classList.add('card', 'card-item');
 
     card.innerHTML = `
       <div class="card-img-wrap">
-        <img src="${track.cover}" alt="${track.title}" onerror="this.src='https://via.placeholder.com/300'">
+        <img src="${track.cover}" class="album-art" alt="${track.title}" onerror="this.src='https://via.placeholder.com/300'">
         <i class="fa-heart ${isLiked ? 'fa-solid active-heart' : 'fa-regular'} card-heart" id="heart-${index}"></i>
         <button class="card-play-btn" title="Play ${escapeHtml(track.title)}" data-index="${index}">
           <i class="fa-solid fa-play"></i>
@@ -3267,7 +3267,7 @@ function renderArtistAlbums(albums, artistName) {
     card.title = `Listen to ${alb.title}`;
 
     card.innerHTML = `
-      <img src="${alb.cover || 'https://via.placeholder.com/300'}" alt="${escapeHtml(alb.title)}" onerror="this.src='https://via.placeholder.com/300'">
+      <img src="${alb.cover || 'https://via.placeholder.com/300'}" class="album-art" alt="${escapeHtml(alb.title)}" onerror="this.src='https://via.placeholder.com/300'">
       <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(alb.title)}</h4>
       <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${escapeHtml(alb.year ? alb.year + ' • Album' : 'Album')}</p>
     `;
@@ -3597,6 +3597,34 @@ mainFilterPills.forEach((pill) => {
     }
   });
 });
+
+// Initial Search Landing Prompt (No songs auto-loaded until user searches)
+function showInitialSearchPrompt() {
+  if (trackGrid) {
+    trackGrid.innerHTML = `
+      <div class="search-initial-placeholder" style="grid-column: 1/-1; text-align: center; padding: 70px 20px 90px 20px; color: #b3b3b3;">
+        <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.06); display: inline-flex; align-items: center; justify-content: center; font-size: 32px; color: #1db954; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <h2 style="font-size: 26px; font-weight: 800; color: #ffffff; margin-bottom: 10px;">Play what you love</h2>
+        <p style="font-size: 15px; color: #9ca3af; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.5;">Search for your favorite songs, artists, podcasts, or genres in the search bar above to start streaming.</p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button class="quick-chip" onclick="executeQuickSearch('Arijit Singh')">🎤 Arijit Singh</button>
+          <button class="quick-chip" onclick="executeQuickSearch('Trending Bollywood Hits')">🔥 Bollywood Hits</button>
+          <button class="quick-chip" onclick="executeQuickSearch('Sidhu Moose Wala')">🥁 Punjabi Hits</button>
+          <button class="quick-chip" onclick="executeQuickSearch('Lo-Fi Chill Beats')">🎧 Lo-Fi Beats</button>
+        </div>
+      </div>
+    `;
+  }
+  if (sectionTitle) sectionTitle.innerText = "Search & Discover";
+}
+
+window.executeQuickSearch = function(query) {
+  if (searchInput) searchInput.value = query;
+  if (sectionTitle) sectionTitle.innerText = `Search Results for "${query}"`;
+  fetchOnlineSongs(query);
+};
 
 // Initializations
 checkAuthState();

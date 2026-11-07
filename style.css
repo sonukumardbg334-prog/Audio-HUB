@@ -3226,6 +3226,14 @@ body[data-theme="light"] .toast-item {
   scroll-snap-align: start;       /* Snap effect ke sath match karne ke liye */
 }
 
+.album-art {
+  width: 140px;
+  height: 140px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 /* Har ek card */
 .music-card {
     flex: 0 0 160px;               /* Shrink ya grow hone se rokta hai, fixed width */
@@ -3664,4 +3672,23 @@ body[data-theme="light"] .toast-item {
   background: #1db954;
   color: #000000;
   border-color: #1db954;
+}
+
+/* Quick Search Chip */
+.quick-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.quick-chip:hover {
+  background: #1db954;
+  color: #000000;
+  border-color: #1db954;
+  transform: translateY(-2px);
 }

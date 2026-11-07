@@ -216,14 +216,28 @@ async function fallbackItunesSearch(searchTerm, limit = 16) {
 function getMatchingCustomSongs(query) {
   const db = readDb();
   const customSongs = db.customSongs || [];
-  if (!query) return customSongs;
+  if (!query) return [];
 
   const q = query.toLowerCase().trim();
-  const genericQueries = ['top hits', 'bollywood', 'trending', 'home', 'all'];
+  const genericQueries = [
+    'top hits',
+    'bollywood',
+    'bollywood hits',
+    'trending',
+    'trending songs',
+    'top trending hits',
+    'home',
+    'all',
+    'hindi',
+    'punjabi',
+    'pop',
+    'trending bollywood & pop hits',
+    'top hindi podcasts & audio stories'
+  ];
 
-  // If user searches generic, show all custom songs
-  if (genericQueries.some((g) => q.includes(g))) {
-    return customSongs;
+  // Do NOT return custom songs on generic or default home queries
+  if (genericQueries.some((g) => q === g || q.startsWith(g) || (q.length > 2 && g.includes(q)))) {
+    return [];
   }
 
   return customSongs.filter(
@@ -336,9 +350,6 @@ app.get('/api/suggestions', async (req, res) => {
 
 // Trending hits endpoint
 app.get('/api/trending', async (req, res) => {
-  const db = readDb();
-  const customSongs = db.customSongs || [];
-
   try {
     const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=Trending%20Songs%202026&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=20&p=1`;
     const response = await fetch(saavnUrl);
@@ -349,18 +360,15 @@ app.get('/api/trending', async (req, res) => {
         .map((item, idx) => formatJioSaavnSong(item, idx))
         .filter((song) => !!song.src);
 
-      const combined = [...customSongs, ...saavnSongs];
-      return res.json({ success: true, count: combined.length, results: combined });
+      return res.json({ success: true, count: saavnSongs.length, results: saavnSongs });
     }
 
     const fallback = await fallbackItunesSearch('Trending Hits', 16);
-    const combined = [...customSongs, ...fallback];
-    res.json({ success: true, count: combined.length, results: combined });
+    res.json({ success: true, count: fallback.length, results: fallback });
   } catch (err) {
     console.error('Trending fetch error:', err);
     const fallback = await fallbackItunesSearch('Trending Hits', 16);
-    const combined = [...customSongs, ...fallback];
-    res.json({ success: true, count: combined.length, results: combined });
+    res.json({ success: true, count: fallback.length, results: fallback });
   }
 });
 
