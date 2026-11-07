@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPOTIFY - Beyond Music</title>
+
+  <link rel="stylesheet" href="style.css">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo">
+        <i class="fa-solid fa-compact-disc"></i>
+        <span>Spotify</span>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" id="nav-home" class="active"><i class="fa-solid fa-house"></i> Home</a>
+        <a href="#" id="nav-discover"><i class="fa-solid fa-compass"></i> Discover</a>
+        <a href="#" id="nav-library"><i class="fa-solid fa-book"></i> Your Library</a>
+        <a href="#" id="nav-admin"><i class="fa-solid fa-sliders"></i> Admin Panel</a>
+      </nav>
+
+      <!-- Playlists Section -->
+      <div class="playlists">
+        <div class="playlists-header">
+          <p class="playlist-title">PLAYLISTS</p>
+          <button id="create-playlist-btn" class="btn-icon-plus" title="Create New Playlist"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <ul class="fixed-playlists">
+          <li id="nav-liked"><i class="fa-solid fa-heart"></i> Liked Songs</li>
+          <li id="nav-trending"><i class="fa-solid fa-fire"></i> Top Trending</li>
+          <li id="nav-custom"><i class="fa-solid fa-star"></i> Featured Hits</li>
+        </ul>
+        <p class="playlist-subtitle">MY PLAYLISTS</p>
+        <ul id="user-playlists-list" class="user-playlists-list">
+          <!-- Populated dynamically via JS -->
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="main-content">
+      <header class="top-bar">
+        <!-- Live Search Input + Voice Search -->
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search-input" placeholder="Search new songs, artists, or albums..." autocomplete="off">
+          <button id="voice-search-btn" class="voice-search-btn" title="Voice Search (बोलकर सर्च करें)">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <button id="search-btn">Search</button>
+          <!-- Live Search Options / Auto-complete Dropdown -->
+          <div id="search-suggestions" class="search-suggestions hidden"></div>
+        </div>
+
+        <div class="header-right-actions">
+          <label class="theme-control" for="theme-select">
+            <i class="fa-solid fa-palette" aria-hidden="true"></i>
+            <select id="theme-select" aria-label="Color theme">
+              <option value="normal">Normal</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </label>
+
+          <!-- Ambient Sound Mixer Button -->
+          <button id="open-ambient-btn" class="btn-ambient" title="Ambient Sounds Mixer (Rain, Campfire, Cafe)">
+            <i class="fa-solid fa-cloud-rain"></i> Ambiance
+          </button>
+
+          <!-- Admin Quick Access Button -->
+          <button id="open-admin-btn" class="btn-admin" title="Admin Portal - Add/Delete Songs">
+            <i class="fa-solid fa-shield-halved"></i> Admin
+          </button>
+
+          <!-- Auth Action Buttons / User Profile -->
+          <div class="auth-buttons" id="auth-buttons">
+            <button id="open-login-btn" class="btn-secondary">Log in</button>
+            <button id="open-signup-btn" class="btn-primary">Sign up</button>
+          </div>
+          <div class="user-profile hidden" id="user-profile">
+            <span id="user-display-name"><i class="fa-solid fa-user"></i> User</span>
+            <button id="logout-btn" class="btn-logout" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Mood & Genre Filter Pills -->
+      <div class="mood-chips-container">
+        <button class="mood-chip active" data-query="Top Hits"><i class="fa-solid fa-sparkles"></i> All</button>
+        <button class="mood-chip" data-query="Romantic Bollywood Hits"><i class="fa-solid fa-heart"></i> Romantic</button>
+        <button class="mood-chip" data-query="Bollywood Party Dance"><i class="fa-solid fa-champagne-glasses"></i> Party & Dance</button>
+        <button class="mood-chip" data-query="Sad Soulful Songs"><i class="fa-solid fa-cloud-rain"></i> Sad & Soulful</button>
+        <button class="mood-chip" data-query="Lo-Fi Chill Beats"><i class="fa-solid fa-headphones"></i> Lo-Fi & Study</button>
+        <button class="mood-chip" data-query="Gym Workout Motivation"><i class="fa-solid fa-dumbbell"></i> Workout / Gym</button>
+        <button class="mood-chip" data-query="Trending Punjabi Hits"><i class="fa-solid fa-drum"></i> Punjabi Beats</button>
+      </div>
+
+      <h2 class="section-title" id="section-title">Trending Tracks</h2>
+
+      <!-- Music Grid -->
+      <section class="track-grid" id="track-grid">
+        <!-- Tracks rendered dynamically via JavaScript -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Sticky Bottom Audio Player -->
+  <footer class="player-bar" id="player-bar">
+    <div class="now-playing">
+      <img src="https://via.placeholder.com/60" id="cover-art" alt="Album Cover">
+      <div class="track-info">
+        <h4 id="track-title">Select or Search a Song</h4>
+        <p id="track-artist">Artist Name</p>
+      </div>
+      <!-- Mini Visualizer Canvas -->
+      <canvas id="visualizer-canvas" class="visualizer-canvas" width="60" height="24" title="Live Audio Visualizer"></canvas>
+    </div>
+
+    <div class="player-controls">
+      <div class="buttons">
+        <!-- 8D Audio Mode Button -->
+        <button id="eight-d-btn" class="eight-d-btn" title="8D Spatial Audio (360° Surround Sound)">
+          <i class="fa-solid fa-headphones"></i> 8D
+        </button>
+
+        <!-- Shuffle Button -->
+        <button id="shuffle-btn" class="control-extra-btn" title="Shuffle (Off)">
+          <i class="fa-solid fa-shuffle"></i>
+        </button>
+        <!-- Prev -->
+        <button id="prev-btn" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
+        <!-- Play / Pause -->
+        <button id="play-btn" class="play-pause" title="Play/Pause"><i class="fa-solid fa-play"></i></button>
+        <!-- Next -->
+        <button id="next-btn" title="Next"><i class="fa-solid fa-forward-step"></i></button>
+        <!-- Repeat Button -->
+        <button id="repeat-btn" class="control-extra-btn" title="Repeat (Off)">
+          <i class="fa-solid fa-repeat"></i>
+          <span id="repeat-badge" class="repeat-badge hidden">1</span>
+        </button>
+      </div>
+      <div class="progress-container">
+        <span id="current-time">0:00</span>
+        <input type="range" id="progress-bar" value="0" min="0" max="100">
+        <span id="total-time">0:00</span>
+      </div>
+    </div>
+
+    <div class="player-right-controls">
+      <!-- 5-Band Equalizer & Bass Boost -->
+      <button id="eq-btn" class="tool-btn" title="5-Band Equalizer & Bass Boost"><i class="fa-solid fa-sliders"></i></button>
+      <!-- Sleep Timer -->
+      <button id="sleep-timer-btn" class="tool-btn" title="Sleep Timer (स्लीप टाइमर)"><i class="fa-solid fa-moon"></i></button>
+      <!-- Playback Speed -->
+      <button id="speed-btn" class="speed-btn" title="Playback Speed">1.0x</button>
+      <!-- Queue / Up Next -->
+      <button id="queue-btn" class="tool-btn" title="Up Next Queue"><i class="fa-solid fa-list-ul"></i></button>
+      <!-- Download Song -->
+      <button id="download-current-btn" class="tool-btn" title="Download Song (MP3/Audio)"><i class="fa-solid fa-arrow-down-to-bracket"></i></button>
+      <!-- Share Song -->
+      <button id="share-current-btn" class="tool-btn" title="Share Song"><i class="fa-solid fa-share-nodes"></i></button>
+
+      <div class="volume-controls">
+        <i class="fa-solid fa-volume-high"></i>
+        <input type="range" id="volume-bar" value="80" min="0" max="100">
+      </div>
+    </div>
+  </footer>
+
+  <!-- USER AUTH POPUP MODAL -->
+  <div class="modal-overlay hidden" id="auth-modal">
+    <div class="modal-card">
+      <button type="button" class="close-modal" id="close-modal-btn">&times;</button>
+      
+      <form id="signup-form" class="auth-form">
+        <h2>Create Account</h2>
+        <div class="input-group">
+          <label for="signup-username">Username</label>
+          <input type="text" id="signup-username" placeholder="Enter username" required>
+        </div>
+        <div class="input-group">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="Enter email" required>
+        </div>
+        <div class="input-group">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="submit-btn">Sign Up</button>
+        <p class="switch-form">Already have an account? <a href="#" id="switch-to-login">Log in</a></p>
+      </form>
+
+      <form id="login-form" class="auth-form hidden">
+        <h2>Welcome Back</h2>
+        <div class="input-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="Enter email" required>
+        </div>
+        <div class="input-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="submit-btn">Log In</button>
+        <p class="switch-form">Don't have an account? <a href="#" id="switch-to-signup">Sign up</a></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN PORTAL MODAL -->
+  <div class="modal-overlay hidden" id="admin-modal">
+    <div class="modal-card admin-login-card" id="admin-login-view">
+      <button type="button" class="close-modal" id="close-admin-login-btn">&times;</button>
+      <div class="admin-modal-header">
+        <div class="admin-shield-icon"><i class="fa-solid fa-user-shield"></i></div>
+        <h2>Admin Authentication</h2>
+        <p>Enter administrator email & password to access portal</p>
+      </div>
+      <form id="admin-login-form" class="auth-form">
+        <div class="input-group">
+          <label for="admin-login-email"><i class="fa-solid fa-envelope"></i> Admin Email</label>
+          <input type="email" id="admin-login-email" placeholder="admin@music.com" value="admin@music.com" required>
+        </div>
+        <div class="input-group">
+          <label for="admin-login-password"><i class="fa-solid fa-key"></i> Admin Password</label>
+          <input type="password" id="admin-login-password" placeholder="Enter admin password" value="admin123" required>
+        </div>
+        <div class="admin-creds-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>Default Admin Login: <b>admin@music.com</b> | <b>admin123</b></div>
+        </div>
+        <button type="submit" class="submit-btn" id="admin-login-submit-btn">
+          <i class="fa-solid fa-lock-open"></i> Authenticate & Enter
+        </button>
+      </form>
+    </div>
+
+    <div class="modal-card admin-modal-card hidden" id="admin-dashboard-view">
+      <button type="button" class="close-modal" id="close-admin-modal-btn">&times;</button>
+      <div class="admin-modal-header dashboard-header">
+        <div>
+          <h2><i class="fa-solid fa-sliders"></i> Admin Music Manager</h2>
+          <p>Add new tracks to the platform or delete existing ones</p>
+        </div>
+        <button type="button" id="admin-logout-btn" class="btn-admin-logout" title="Lock Admin Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Admin Logout
+        </button>
+      </div>
+
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab-btn active" id="tab-add-song"><i class="fa-solid fa-plus"></i> Add New Song</button>
+        <button type="button" class="admin-tab-btn" id="tab-manage-songs"><i class="fa-solid fa-list-check"></i> Manage Songs (<span id="admin-songs-count">0</span>)</button>
+      </div>
+
+      <div class="admin-tab-content" id="content-add-song">
+        <form id="admin-add-song-form" class="admin-form" enctype="multipart/form-data">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="admin-song-title">Song Title *</label>
+              <input type="text" id="admin-song-title" name="title" placeholder="e.g. Dil Nu" required>
+            </div>
+            <div class="input-group">
+              <label for="admin-song-artist">Artist *</label>
+              <input type="text" id="admin-song-artist" name="artist" placeholder="e.g. AP Dhillon" required>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="admin-song-album">Album Name (Optional)</label>
+            <input type="text" id="admin-song-album" name="album" placeholder="e.g. Two Hearts Never Break">
+          </div>
+          <div class="media-input-box">
+            <label class="media-label"><i class="fa-solid fa-music"></i> Audio Source *</label>
+            <div class="media-choice-tabs">
+              <span class="choice-tab active" data-choice="file" id="choice-audio-file">Upload Audio File</span>
+              <span class="choice-tab" data-choice="url" id="choice-audio-url">Enter Audio Link / URL</span>
+            </div>
+            <div id="box-audio-file" class="choice-box">
+              <input type="file" id="admin-audio-file" name="audioFile" accept="audio/*">
+              <small class="hint-text">Supported: MP3, M4A, WAV, OGG (Max 50MB)</small>
+            </div>
+            <div id="box-audio-url" class="choice-box hidden">
+              <input type="url" id="admin-audio-url" name="audioUrl" placeholder="https://example.com/song.mp3">
+              <small class="hint-text">Paste any direct online MP3 or audio stream URL</small>
+            </div>
+          </div>
+          <div class="media-input-box">
+            <label class="media-label"><i class="fa-solid fa-image"></i> Album Cover Artwork</label>
+            <div class="media-choice-tabs">
+              <span class="choice-tab active" data-choice="file" id="choice-cover-file">Upload Image File</span>
+              <span class="choice-tab" data-choice="url" id="choice-cover-url">Enter Image URL</span>
+            </div>
+            <div id="box-cover-file" class="choice-box">
+              <input type="file" id="admin-cover-file" name="coverFile" accept="image/*">
+              <small class="hint-text">Supported: JPG, PNG, WEBP (Square 500x500 recommended)</small>
+            </div>
+            <div id="box-cover-url" class="choice-box hidden">
+              <input type="url" id="admin-cover-url" name="coverUrl" placeholder="https://example.com/cover.jpg">
+              <small class="hint-text">Paste image web address</small>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="admin-submit-btn">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Add Song
+          </button>
+        </form>
+      </div>
+
+      <div class="admin-tab-content hidden" id="content-manage-songs">
+        <div class="admin-song-list" id="admin-song-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UP NEXT QUEUE DRAWER MODAL -->
+  <div class="modal-overlay hidden" id="queue-modal">
+    <div class="modal-card queue-modal-card">
+      <button type="button" class="close-modal" id="close-queue-btn">&times;</button>
+      <div class="queue-header">
+        <h2><i class="fa-solid fa-list-ul"></i> Play Queue</h2>
+        <p>Upcoming tracks in your session</p>
+      </div>
+      <div class="now-playing-queue" id="queue-now-playing">
+        <!-- Rendered via JS -->
+      </div>
+      <h3 class="queue-section-title">Up Next</h3>
+      <div class="queue-list" id="queue-list">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE PLAYLIST MODAL -->
+  <div class="modal-overlay hidden" id="create-playlist-modal">
+    <div class="modal-card" style="max-width: 380px;">
+      <button type="button" class="close-modal" id="close-playlist-modal-btn">&times;</button>
+      <h2 style="margin-bottom: 15px; text-align: center;"><i class="fa-solid fa-folder-plus"></i> New Playlist</h2>
+      <form id="create-playlist-form">
+        <div class="input-group">
+          <label for="new-playlist-name">Playlist Name</label>
+          <input type="text" id="new-playlist-name" placeholder="e.g. Late Night Vibes" required>
+        </div>
+        <button type="submit" class="submit-btn"><i class="fa-solid fa-plus"></i> Create Playlist</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD TO PLAYLIST MODAL -->
+  <div class="modal-overlay hidden" id="add-to-playlist-modal">
+    <div class="modal-card" style="max-width: 400px;">
+      <button type="button" class="close-modal" id="close-add-playlist-btn">&times;</button>
+      <h2 style="margin-bottom: 10px; text-align: center;"><i class="fa-solid fa-plus"></i> Add to Playlist</h2>
+      <p style="color: #a7a7a7; font-size: 13px; text-align: center; margin-bottom: 15px;" id="add-playlist-song-title">Song Title</p>
+      <div id="target-playlists-list" class="target-playlists-list">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. AMBIENT SOUND MIXER MODAL -->
+  <div class="modal-overlay hidden" id="ambient-modal">
+    <div class="modal-card ambient-modal-card">
+      <button type="button" class="close-modal" id="close-ambient-btn">&times;</button>
+      <div class="ambient-header">
+        <h2><i class="fa-solid fa-cloud-rain"></i> Ambient Sound Mixer</h2>
+        <p>Blend soothing natural background sounds with your music</p>
+      </div>
+
+      <div class="ambient-tracks-grid">
+        <!-- Rain & Thunder -->
+        <div class="ambient-track-card" id="card-ambient-rain">
+          <div class="ambient-icon"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+          <div class="ambient-details">
+            <h4>Rain & Storm</h4>
+            <p>Peaceful monsoon drizzle</p>
+          </div>
+          <button type="button" class="ambient-toggle-btn" id="btn-toggle-rain">OFF</button>
+          <input type="range" class="ambient-slider" id="slider-rain" min="0" max="100" value="40">
+        </div>
+
+        <!-- Campfire -->
+        <div class="ambient-track-card" id="card-ambient-fire">
+          <div class="ambient-icon"><i class="fa-solid fa-fire"></i></div>
+          <div class="ambient-details">
+            <h4>Campfire Crackle</h4>
+            <p>Cozy fireplace warmth</p>
+          </div>
+          <button type="button" class="ambient-toggle-btn" id="btn-toggle-fire">OFF</button>
+          <input type="range" class="ambient-slider" id="slider-fire" min="0" max="100" value="40">
+        </div>
+
+        <!-- Cafe -->
+        <div class="ambient-track-card" id="card-ambient-cafe">
+          <div class="ambient-icon"><i class="fa-solid fa-mug-saucer"></i></div>
+          <div class="ambient-details">
+            <h4>Cozy Cafe</h4>
+            <p>Gentle coffeehouse hum</p>
+          </div>
+          <button type="button" class="ambient-toggle-btn" id="btn-toggle-cafe">OFF</button>
+          <input type="range" class="ambient-slider" id="slider-cafe" min="0" max="100" value="40">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. EQUALIZER & BASS BOOST MODAL -->
+  <div class="modal-overlay hidden" id="eq-modal">
+    <div class="modal-card eq-modal-card">
+      <button type="button" class="close-modal" id="close-eq-btn">&times;</button>
+      <div class="eq-header">
+        <h2><i class="fa-solid fa-sliders"></i> 5-Band Graphic Equalizer</h2>
+        <p>Tune frequencies & amplify bass response</p>
+      </div>
+
+      <!-- Presets -->
+      <div class="eq-presets">
+        <button class="eq-preset-btn active" data-preset="flat">Flat / Normal</button>
+        <button class="eq-preset-btn" data-preset="bass">🔊 Heavy Bass</button>
+        <button class="eq-preset-btn" data-preset="club">🕺 Club / EDM</button>
+        <button class="eq-preset-btn" data-preset="rock">🎸 Rock</button>
+        <button class="eq-preset-btn" data-preset="vocal">🎤 Vocal Boost</button>
+      </div>
+
+      <!-- 5 Vertical Sliders -->
+      <div class="eq-sliders-row">
+        <div class="eq-slider-col">
+          <span class="eq-db-label" id="label-eq-60">0dB</span>
+          <input type="range" orient="vertical" class="eq-slider" id="eq-band-60" min="-12" max="12" value="0">
+          <span class="eq-freq-label">60Hz<br><small>Bass</small></span>
+        </div>
+        <div class="eq-slider-col">
+          <span class="eq-db-label" id="label-eq-250">0dB</span>
+          <input type="range" orient="vertical" class="eq-slider" id="eq-band-250" min="-12" max="12" value="0">
+          <span class="eq-freq-label">250Hz<br><small>Low-Mid</small></span>
+        </div>
+        <div class="eq-slider-col">
+          <span class="eq-db-label" id="label-eq-1k">0dB</span>
+          <input type="range" orient="vertical" class="eq-slider" id="eq-band-1k" min="-12" max="12" value="0">
+          <span class="eq-freq-label">1kHz<br><small>Mid</small></span>
+        </div>
+        <div class="eq-slider-col">
+          <span class="eq-db-label" id="label-eq-4k">0dB</span>
+          <input type="range" orient="vertical" class="eq-slider" id="eq-band-4k" min="-12" max="12" value="0">
+          <span class="eq-freq-label">4kHz<br><small>High-Mid</small></span>
+        </div>
+        <div class="eq-slider-col">
+          <span class="eq-db-label" id="label-eq-14k">0dB</span>
+          <input type="range" orient="vertical" class="eq-slider" id="eq-band-14k" min="-12" max="12" value="0">
+          <span class="eq-freq-label">14kHz<br><small>Treble</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SMART SLEEP TIMER MODAL -->
+  <div class="modal-overlay hidden" id="sleep-timer-modal">
+    <div class="modal-card sleep-modal-card">
+      <button type="button" class="close-modal" id="close-sleep-btn">&times;</button>
+      <div class="sleep-header">
+        <div class="sleep-icon"><i class="fa-solid fa-moon"></i></div>
+        <h2>Smart Sleep Timer</h2>
+        <p>Gradual volume fade-out when timer ends</p>
+      </div>
+
+      <div class="sleep-status-box" id="sleep-status-box">
+        Timer is currently <b>Inactive</b>
+      </div>
+
+      <div class="sleep-chips-grid">
+        <button class="sleep-chip" data-min="15">15 Minutes</button>
+        <button class="sleep-chip" data-min="30">30 Minutes</button>
+        <button class="sleep-chip" data-min="45">45 Minutes</button>
+        <button class="sleep-chip" data-min="60">60 Minutes</button>
+        <button type="button" class="sleep-chip btn-turn-off-timer" id="btn-turn-off-timer">Turn Off Timer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

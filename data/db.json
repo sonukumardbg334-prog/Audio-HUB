@@ -1,0 +1,271 @@
+{
+  "users": [
+    {
+      "id": "user_1793817162873",
+      "username": "admin@music.com",
+      "email": "kumarsunny11092006@gmail.com",
+      "password": "admin123",
+      "likedSongs": [],
+      "library": [
+        {
+          "id": "permanent_dil_tu_torli",
+          "title": "दिल तू तोरली सील हम तोरबो (Dil Tu Torli Sil Ham Torbo)",
+          "artist": "Banshidhar Chaudhary, Suman Sona",
+          "album": "Anushka Music Bhojpuri",
+          "src": "/uploads/songs/dil_tu_torli.m4a",
+          "cover": "/uploads/covers/dil_tu_torli.webp",
+          "duration": 195,
+          "source": "permanent",
+          "createdAt": "2026-11-04T18:45:08.145Z"
+        },
+        {
+          "id": "yXK4c-5P",
+          "title": "Kala Chashma",
+          "artist": "Amar Arshi, Badshah, Neha Kakkar, Indeep Bakshi, Prem & Hardeep, Kumaar",
+          "cover": "https://c.saavncdn.com/755/Dance-Party-Hits-Hindi-2026-20260928153001-500x500.jpg",
+          "src": "https://aac.saavncdn.com/755/49ca868b379074a3b6bfd3cbc44ed23e_160.mp4",
+          "duration": 187,
+          "album": "Dance Party Hits",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "custom_1793860106713",
+          "title": "din nu",
+          "artist": "ap dhlphin",
+          "album": "Single",
+          "src": "/uploads/songs/1793860106237_Song3.mp3.mp3",
+          "cover": "https://via.placeholder.com/300",
+          "duration": 0,
+          "source": "custom",
+          "createdAt": "2026-11-05T06:28:26.713Z"
+        },
+        {
+          "id": "hVlYGjJR",
+          "title": "Chudiya Tut Jai Raja Ji",
+          "artist": "Sunita Yadav",
+          "cover": "https://c.saavncdn.com/867/Chudiya-Tut-Jai-Raja-Ji-Bhojpuri-2026-20260608192236-500x500.jpg",
+          "src": "https://aac.saavncdn.com/867/dd206280f88a42fe7cdda699996bcf3c_160.mp4",
+          "duration": 422,
+          "album": "Chudiya Tut Jai Raja Ji",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "JO4yCcVZ",
+          "title": "Tut Jaai Raja Ji",
+          "artist": "Khesari Lal Yadav",
+          "cover": "https://c.saavncdn.com/920/Tut-Jaai-Raja-Ji-Bhojpuri-2023-20230516140016-500x500.jpg",
+          "src": "https://aac.saavncdn.com/920/ff5d374bbc68a1ca36da61c67dd4b665_160.mp4",
+          "duration": 231,
+          "album": "Tut Jaai Raja Ji",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "QcfFd62t",
+          "title": "Tu Mil Jaaye (From \"KING\")",
+          "artist": "Sachin-Jigar, Ed Sheeran, Arijit Singh, Kumaar, Madhubanti Bagchi",
+          "cover": "https://c.saavncdn.com/320/Tu-Mil-Jaaye-From-KING-Hindi-2026-20261031131042-500x500.jpg",
+          "src": "https://aac.saavncdn.com/320/4d91932291471256b3c9313360ebb834_160.mp4",
+          "duration": 315,
+          "album": "Tu Mil Jaaye (From \"KING\")",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "qcEf8GY8",
+          "title": "Apna Bana Le",
+          "artist": "Amitabh Bhattacharya, Sachin-Jigar, Arijit Singh",
+          "cover": "https://c.saavncdn.com/675/Trending-Love-Songs-Hindi-2026-20260506185328-500x500.jpg",
+          "src": "https://aac.saavncdn.com/675/1456dc2903d0fb4465d2d2904008803b_160.mp4",
+          "duration": 261,
+          "album": "Trending Love Songs",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "YiVML4Zo",
+          "title": "Gehra Hua (From \"Dhurandhar\")",
+          "artist": "Shashwat Sachdev, Arijit Singh, Irshad Kamil, Armaan Khan",
+          "cover": "https://c.saavncdn.com/450/Gehra-Hua-From-Dhurandhar-Hindi-2025-20251205154217-500x500.jpg",
+          "src": "https://aac.saavncdn.com/450/f467e05e2825cec2203546333e0d0550_160.mp4",
+          "duration": 362,
+          "album": "Gehra Hua (From \"Dhurandhar\")",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "-Y5w-EP4",
+          "title": "Lizard",
+          "artist": "EDM Dance Music",
+          "cover": "https://c.saavncdn.com/034/EDM-Dance-Music-English-2015-500x500.jpg",
+          "src": "https://aac.saavncdn.com/034/7a1bc75ed47dce5ab35930bc2ee026e4_160.mp4",
+          "duration": 441,
+          "album": "EDM Dance Music",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "gDWD8BK3",
+          "title": "Lizard",
+          "artist": "EDM Dance Music",
+          "cover": "https://c.saavncdn.com/537/EDM-Dance-Mix-English-2015-500x500.jpg",
+          "src": "https://aac.saavncdn.com/537/b6433de34478359ab40ad01039b3d260_160.mp4",
+          "duration": 441,
+          "album": "EDM Dance Mix",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "pY_v_mUx",
+          "title": "Baby Title Song (Sad)",
+          "artist": "Humane Sagar",
+          "cover": "https://c.saavncdn.com/696/Soulful-Melodies-Odia-2017-500x500.jpg",
+          "src": "https://aac.saavncdn.com/696/550872da97b9f4cbf0ca7cf78ac68dc9_160.mp4",
+          "duration": 96,
+          "album": "Soulful Melodies",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "QH5yq38W",
+          "title": "Paani Waala Dance",
+          "artist": "Ikka, Arko, Shraddha Pandit",
+          "cover": "https://c.saavncdn.com/755/Dance-Party-Hits-Hindi-2026-20260928153001-500x500.jpg",
+          "src": "https://aac.saavncdn.com/755/79ccd3e161e057f64a42a3305a744b4d_160.mp4",
+          "duration": 238,
+          "album": "Dance Party Hits",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "HraT8uQL",
+          "title": "Romantic Mashup",
+          "artist": "Raj Barman, Anwesshaa Dattagupta",
+          "cover": "https://c.saavncdn.com/424/Romantic-Mashup-Hindi-2018-20230608012356-500x500.jpg",
+          "src": "https://aac.saavncdn.com/424/b52911e8526e186732742b6d2d0268fa_160.mp4",
+          "duration": 401,
+          "album": "Romantic Mashup",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "t3umP44R",
+          "title": "Workout Motivational",
+          "artist": "Indoor Cycle Trainer",
+          "cover": "https://c.saavncdn.com/107/Workout-Motivational-2019-Fitness-Hits-Workout-Music-Playlist-English-2019-20190313154007-500x500.jpg",
+          "src": "https://aac.saavncdn.com/107/84d3ab125b74c08bcdbe2de7ffb2919b_160.mp4",
+          "duration": 228,
+          "album": "Workout Motivational – 2019 Fitness Hits, Workout Music Playlist",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "nS0wZNu2",
+          "title": "Lo Fi Chill Beats",
+          "artist": "Lofi For Energy & Inspiration, Music To Get Energized & Inspired, Energetic Lo Fi HipHop Playlist",
+          "cover": "https://c.saavncdn.com/114/Inspirational-Lo-Fi-Playlist-For-Energy-Unknown-2022-20221011030539-500x500.jpg",
+          "src": "https://aac.saavncdn.com/114/8a065ff50b871cb8aa75d0aed80ef860_160.mp4",
+          "duration": 85,
+          "album": "Inspirational Lo Fi Playlist For Energy",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "ZjeR_63B",
+          "title": "Dil Tu Jaan Tu",
+          "artist": "Gurnazar",
+          "cover": "https://c.saavncdn.com/912/Dil-Tu-Jaan-Tu-Hindi-2024-20240607164640-500x500.jpg",
+          "src": "https://aac.saavncdn.com/912/0c24911425ce2f710fd96e633dcd4b12_160.mp4",
+          "duration": 237,
+          "album": "Dil Tu Jaan Tu",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "ISeP7PtR",
+          "title": "Mobile Girawata Langha Me",
+          "artist": "Mithu Masti",
+          "cover": "https://c.saavncdn.com/651/Mobile-Girawata-Langha-Me-Bhojpuri-2022-20230208160509-500x500.jpg",
+          "src": "https://aac.saavncdn.com/651/b68633b0f634638c5112366f4f2d6a43_160.mp4",
+          "duration": 213,
+          "album": "Mobile Girawata Langha Me",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "jSTGG2Ij",
+          "title": "Langha Me Tota",
+          "artist": "Ramdhan Gujar, Dinesh Gujar, Soni Gujar",
+          "cover": "https://c.saavncdn.com/934/Doli-Me-Bhotiya-Le-Jauga-Hindi-1989-20230328183537-500x500.jpg",
+          "src": "https://aac.saavncdn.com/934/f72cea6fc1cde924897f64ac2198e401_160.mp4",
+          "duration": 332,
+          "album": "Doli Me Bhotiya Le Jauga",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "g7Z3mj1x",
+          "title": "Akhra Ke Lathi Dhodhiye Me Hur Debo",
+          "artist": "Suraj Sawariya",
+          "cover": "https://c.saavncdn.com/883/Akhra-Ke-Lathi-Dhodhiye-Me-Hur-Debo-Bhojpuri-2024-20240605154843-500x500.jpg",
+          "src": "https://aac.saavncdn.com/883/97edb501424045fe186eaf95ef75cf21_160.mp4",
+          "duration": 268,
+          "album": "Akhra Ke Lathi Dhodhiye Me Hur Debo",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "1OP48nxY",
+          "title": "Aakhra Ke Lathi Hur Dem",
+          "artist": "Ravindra Ratnesh, Aaisha Raj",
+          "cover": "https://c.saavncdn.com/191/Aakhra-Ke-Lathi-Hur-Dem-Bhojpuri-2025-20250724143519-500x500.jpg",
+          "src": "https://aac.saavncdn.com/191/8fa8b15bd9731372ea80fbdd3be676cb_160.mp4",
+          "duration": 152,
+          "album": "Aakhra Ke Lathi Hur Dem",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "nXemR4Ci",
+          "title": "Albele Tange Wale",
+          "artist": "Rahul Baliyan, Kanchan Sharma",
+          "cover": "https://c.saavncdn.com/518/Albele-Tange-Wale-Hindi-2024-20240924042122-500x500.jpg",
+          "src": "https://aac.saavncdn.com/518/e827efa296d2c8d3fd4361278902c2d7_160.mp4",
+          "duration": 238,
+          "album": "Albele Tange Wale",
+          "source": "jiosaavn"
+        }
+      ],
+      "createdAt": "2026-11-04T18:32:42.873Z",
+      "playlists": []
+    },
+    {
+      "id": "user_1793857642692",
+      "username": "sanjay",
+      "email": "sanjay111@gmail.com",
+      "password": "12345",
+      "likedSongs": [],
+      "library": [
+        {
+          "id": "QcfFd62t",
+          "title": "Tu Mil Jaaye (From \"KING\")",
+          "artist": "Sachin-Jigar, Ed Sheeran, Arijit Singh, Kumaar, Madhubanti Bagchi",
+          "cover": "https://c.saavncdn.com/320/Tu-Mil-Jaaye-From-KING-Hindi-2026-20261031131042-500x500.jpg",
+          "src": "https://aac.saavncdn.com/320/4d91932291471256b3c9313360ebb834_160.mp4",
+          "duration": 315,
+          "album": "Tu Mil Jaaye (From \"KING\")",
+          "source": "jiosaavn"
+        }
+      ],
+      "createdAt": "2026-11-05T05:47:22.692Z"
+    }
+  ],
+  "customSongs": [
+    {
+      "id": "permanent_dil_tu_torli",
+      "title": "दिल तू तोरली सील हम तोरबो (Dil Tu Torli Sil Ham Torbo)",
+      "artist": "Banshidhar Chaudhary, Suman Sona",
+      "album": "Anushka Music Bhojpuri",
+      "src": "/uploads/songs/dil_tu_torli.m4a",
+      "cover": "/uploads/covers/dil_tu_torli.webp",
+      "duration": 195,
+      "source": "permanent",
+      "createdAt": "2026-11-04T18:45:08.145Z"
+    },
+    {
+      "id": "custom_1793860106713",
+      "title": "din nu",
+      "artist": "ap dhlphin",
+      "album": "Single",
+      "src": "/uploads/songs/1793860106237_Song3.mp3.mp3",
+      "cover": "https://via.placeholder.com/300",
+      "duration": 0,
+      "source": "custom",
+      "createdAt": "2026-11-05T06:28:26.713Z"
+    }
+  ]
+}

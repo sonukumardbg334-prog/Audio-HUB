@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 560" fill="none">
+  <defs>
+    <linearGradient id="band" x1="92" y1="79" x2="387" y2="339" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9F7ED"/>
+      <stop offset=".22" stop-color="#4D716C"/>
+      <stop offset=".5" stop-color="#172522"/>
+      <stop offset=".77" stop-color="#7BD9B3"/>
+      <stop offset="1" stop-color="#182522"/>
+    </linearGradient>
+    <linearGradient id="cup" x1="123" y1="277" x2="209" y2="442" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#85E7C0"/>
+      <stop offset=".18" stop-color="#304A43"/>
+      <stop offset=".5" stop-color="#111A18"/>
+      <stop offset=".8" stop-color="#405C53"/>
+      <stop offset="1" stop-color="#101715"/>
+    </linearGradient>
+    <linearGradient id="cushion" x1="142" y1="303" x2="192" y2="412" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24332F"/>
+      <stop offset=".5" stop-color="#080D0C"/>
+      <stop offset="1" stop-color="#31443D"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="133" y1="313" x2="197" y2="398" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A2F5D5"/>
+      <stop offset="1" stop-color="#1DB954"/>
+    </linearGradient>
+    <filter id="shadow" x="30" y="24" width="420" height="510" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="13"/>
+      <feOffset dy="12"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".45"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 302V224C92 116 158 54 240 54s148 62 148 170v78" stroke="#07100D" stroke-width="46"/>
+    <path d="M92 302V224C92 116 158 54 240 54s148 62 148 170v78" stroke="url(#band)" stroke-width="31"/>
+    <path d="M107 216C111 123 164 76 239 76c72 0 126 47 134 140" stroke="#D7FFF0" stroke-opacity=".48" stroke-width="4"/>
+    <path d="M103 273v46M377 273v46" stroke="#B6F9DD" stroke-opacity=".75" stroke-width="9"/>
+    <path d="M105 314c0-21 17-38 38-38h27c22 0 40 18 40 40v95c0 25-20 45-45 45h-15c-25 0-45-20-45-45v-97Z" fill="#07100D" stroke="#09120F" stroke-width="8"/>
+    <path d="M113 316c0-17 14-31 31-31h25c18 0 33 15 33 33v91c0 20-16 37-37 37h-15c-21 0-37-17-37-37v-93Z" fill="url(#cup)" stroke="#6DC9A2" stroke-opacity=".8" stroke-width="3"/>
+    <path d="M127 324c0-11 9-20 20-20h17c14 0 25 11 25 25v79c0 14-11 25-25 25h-12c-14 0-25-11-25-25v-84Z" fill="url(#cushion)" stroke="#0A100E" stroke-width="8"/>
+    <path d="M145 315v107M155 311v115" stroke="url(#accent)" stroke-opacity=".68" stroke-width="2"/>
+    <path d="M375 314c0-21-17-38-38-38h-27c-22 0-40 18-40 40v95c0 25 20 45 45 45h15c25 0 45-20 45-45v-97Z" fill="#07100D" stroke="#09120F" stroke-width="8"/>
+    <path d="M367 316c0-17-14-31-31-31h-25c-18 0-33 15-33 33v91c0 20 16 37 37 37h15c21 0 37-17 37-37v-93Z" fill="url(#cup)" stroke="#6DC9A2" stroke-opacity=".8" stroke-width="3"/>
+    <path d="M353 324c0-11-9-20-20-20h-17c-14 0-25 11-25 25v79c0 14 11 25 25 25h12c14 0 25-11 25-25v-84Z" fill="url(#cushion)" stroke="#0A100E" stroke-width="8"/>
+    <path d="M335 315v107M325 311v115" stroke="url(#accent)" stroke-opacity=".68" stroke-width="2"/>
+    <path d="M132 332c5-13 13-19 25-20M348 332c-5-13-13-19-25-20" stroke="#E1FFF1" stroke-opacity=".55" stroke-width="4"/>
+    <path d="M114 398v17c0 20 16 37 37 37h4M366 398v17c0 20-16 37-37 37h-4" stroke="#1DB954" stroke-opacity=".65" stroke-width="3"/>
+  </g>
+</svg>
