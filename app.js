@@ -724,9 +724,12 @@ function renderTracks() {
     card.classList.add('card');
 
     card.innerHTML = `
-      <div style="position: relative;">
+      <div class="card-img-wrap">
         <img src="${track.cover}" alt="${track.title}" onerror="this.src='https://via.placeholder.com/300'">
         <i class="fa-heart ${isLiked ? 'fa-solid active-heart' : 'fa-regular'} card-heart" id="heart-${index}"></i>
+        <button class="card-play-btn" title="Play ${escapeHtml(track.title)}" data-index="${index}">
+          <i class="fa-solid fa-play"></i>
+        </button>
       </div>
       <h3 title="${track.title}">${track.title}</h3>
       <p title="${track.artist}">${track.artist}</p>
@@ -941,6 +944,7 @@ function loadTrack(index) {
   });
 
   updateMediaSession(track);
+  if (typeof syncFullscreenPlayerUI === 'function') syncFullscreenPlayerUI();
   if (typeof updateVizMeta === 'function') updateVizMeta();
   if (typeof lyricsModal !== 'undefined' && lyricsModal && !lyricsModal.classList.contains('hidden')) {
     fetchLyricsForTrack(track);
@@ -960,12 +964,15 @@ function playAudio() {
   audio.play().then(() => {
     isPlaying = true;
     playBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+    const fsPlayBtnEl = document.getElementById('fs-play-btn');
+    if (fsPlayBtnEl) fsPlayBtnEl.innerHTML = `<i class="fa-solid fa-pause"></i>`;
     playerStore.setState({ isPlaying: true });
     const cur = trackList[currentTrackIndex];
     if (cur) {
       addToLibrary(cur);
       addToRecentlyPlayed(cur);
       updateMediaSession(cur);
+      if (typeof syncFullscreenPlayerUI === 'function') syncFullscreenPlayerUI();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
       document.title = `▶ ${cur.title} - ${cur.artist}`;
       if (typeof updateVizMeta === 'function') updateVizMeta();
@@ -984,6 +991,8 @@ function playAudio() {
     console.warn("Playback error/aborted:", err.message);
     isPlaying = false;
     playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+    const fsPlayBtnEl = document.getElementById('fs-play-btn');
+    if (fsPlayBtnEl) fsPlayBtnEl.innerHTML = `<i class="fa-solid fa-play"></i>`;
     playerStore.setState({ isPlaying: false });
   });
 }
@@ -993,6 +1002,8 @@ function pauseAudio() {
   isPlaying = false;
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+  const fsPlayBtnEl = document.getElementById('fs-play-btn');
+  if (fsPlayBtnEl) fsPlayBtnEl.innerHTML = `<i class="fa-solid fa-play"></i>`;
   playerStore.setState({ isPlaying: false });
   document.title = 'Spotify 2.0 - Web Player';
   if (typeof updateVizMeta === 'function') updateVizMeta();
@@ -1051,6 +1062,16 @@ audio.addEventListener('timeupdate', () => {
     progressBar.value = progressPercent;
     currentTimeEl.innerText = formatTime(audio.currentTime);
     totalTimeEl.innerText = formatTime(audio.duration);
+
+    // Fullscreen Popup Player Sync
+    const fsProgressBarEl = document.getElementById('fs-progress-bar');
+    const fsCurrentTimeEl = document.getElementById('fs-current-time');
+    const fsTotalTimeEl = document.getElementById('fs-total-time');
+    if (fsProgressBarEl && (typeof isFsScrubbing === 'undefined' || !isFsScrubbing)) {
+      fsProgressBarEl.value = progressPercent;
+    }
+    if (fsCurrentTimeEl) fsCurrentTimeEl.innerText = formatTime(audio.currentTime);
+    if (fsTotalTimeEl) fsTotalTimeEl.innerText = formatTime(audio.duration);
 
     // Live Synced Lyrics Scroll
     if (typeof updateSyncedLyrics === 'function') {
@@ -3335,6 +3356,247 @@ function initSliderTouchGestures() {
 }
 
 initSliderTouchGestures();
+
+// ==========================================
+// 25. EXPANDABLE SPOTIFY FULLSCREEN POPUP PLAYER & CATEGORY PILLS
+// ==========================================
+let isFsScrubbing = false;
+
+const fullscreenPlayerModal = document.getElementById('fullscreen-player-modal');
+const closeFullscreenPlayerBtn = document.getElementById('close-fullscreen-player-btn');
+const expandPlayerBtn = document.getElementById('expand-player-btn');
+const miniNowPlaying = document.getElementById('mini-now-playing');
+const fsPlayerBackdrop = document.getElementById('fs-player-backdrop');
+
+const fsCoverArt = document.getElementById('fs-cover-art');
+const fsTrackTitle = document.getElementById('fs-track-title');
+const fsTrackArtist = document.getElementById('fs-track-artist');
+const fsHeartBtn = document.getElementById('fs-heart-btn');
+const miniHeartBtn = document.getElementById('mini-heart-btn');
+const fsPlaylistName = document.getElementById('fs-playlist-name');
+
+const fsProgressBar = document.getElementById('fs-progress-bar');
+const fsCurrentTime = document.getElementById('fs-current-time');
+const fsTotalTime = document.getElementById('fs-total-time');
+
+const fsPlayBtn = document.getElementById('fs-play-btn');
+const fsPrevBtn = document.getElementById('fs-prev-btn');
+const fsNextBtn = document.getElementById('fs-next-btn');
+const fsShuffleBtn = document.getElementById('fs-shuffle-btn');
+const fsRepeatBtn = document.getElementById('fs-repeat-btn');
+const fsRepeatBadge = document.getElementById('fs-repeat-badge');
+
+const fsLyricsBtn = document.getElementById('fs-lyrics-btn');
+const fsEightDBtn = document.getElementById('fs-eight-d-btn');
+const fsShareBtn = document.getElementById('fs-share-btn');
+
+function openFullscreenPlayer() {
+  if (!fullscreenPlayerModal) return;
+  syncFullscreenPlayerUI();
+  fullscreenPlayerModal.classList.add('open');
+  fullscreenPlayerModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFullscreenPlayer() {
+  if (!fullscreenPlayerModal) return;
+  fullscreenPlayerModal.classList.remove('open');
+  fullscreenPlayerModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function syncFullscreenPlayerUI() {
+  const cur = trackList[currentTrackIndex];
+  if (!cur) return;
+
+  if (fsTrackTitle) fsTrackTitle.innerText = cur.title || 'Select a Song';
+  if (fsTrackArtist) fsTrackArtist.innerText = cur.artist || 'Artist Name';
+  if (fsCoverArt) fsCoverArt.src = cur.cover || 'https://via.placeholder.com/500';
+  if (fsPlaylistName && sectionTitle) {
+    fsPlaylistName.innerText = sectionTitle.innerText.replace(/Search Results for /gi, '') || 'Top Trending Hits';
+  }
+
+  // Sync Likes
+  const isLiked = getLikedSongs().some(s => s.src === cur.src);
+  if (fsHeartBtn) {
+    fsHeartBtn.innerHTML = isLiked ? '<i class="fa-solid fa-heart" style="color: #1db954;"></i>' : '<i class="fa-regular fa-heart"></i>';
+  }
+  if (miniHeartBtn) {
+    miniHeartBtn.innerHTML = isLiked ? '<i class="fa-solid fa-heart" style="color: #1db954;"></i>' : '<i class="fa-regular fa-heart"></i>';
+  }
+
+  // Sync Play/Pause
+  if (fsPlayBtn) {
+    fsPlayBtn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+  }
+
+  // Sync Shuffle
+  if (fsShuffleBtn) {
+    if (isShuffle) fsShuffleBtn.classList.add('active');
+    else fsShuffleBtn.classList.remove('active');
+  }
+
+  // Sync Repeat
+  if (fsRepeatBtn) {
+    if (repeatMode > 0) fsRepeatBtn.classList.add('active');
+    else fsRepeatBtn.classList.remove('active');
+    if (fsRepeatBadge) {
+      if (repeatMode === 2) {
+        fsRepeatBadge.classList.remove('hidden');
+        fsRepeatBadge.innerText = '1';
+      } else {
+        fsRepeatBadge.classList.add('hidden');
+      }
+    }
+  }
+
+  // Sync Time & Scrub Bar
+  if (audio.duration && !isNaN(audio.duration)) {
+    const pct = (audio.currentTime / audio.duration) * 100;
+    if (fsProgressBar && !isFsScrubbing) fsProgressBar.value = pct;
+    if (fsCurrentTime) fsCurrentTime.innerText = formatTime(audio.currentTime);
+    if (fsTotalTime) fsTotalTime.innerText = formatTime(audio.duration);
+  }
+}
+
+// Open/Close triggers
+if (miniNowPlaying) {
+  miniNowPlaying.addEventListener('click', (e) => {
+    if (e.target.closest('#mini-heart-btn') || e.target.closest('.visualizer-canvas')) return;
+    openFullscreenPlayer();
+  });
+}
+
+if (expandPlayerBtn) {
+  expandPlayerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openFullscreenPlayer();
+  });
+}
+
+if (closeFullscreenPlayerBtn) {
+  closeFullscreenPlayerBtn.addEventListener('click', closeFullscreenPlayer);
+}
+
+if (fsPlayerBackdrop) {
+  fsPlayerBackdrop.addEventListener('click', closeFullscreenPlayer);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && fullscreenPlayerModal && fullscreenPlayerModal.classList.contains('open')) {
+    closeFullscreenPlayer();
+  }
+});
+
+// Fullscreen Playback Controls
+if (fsPlayBtn) fsPlayBtn.addEventListener('click', togglePlay);
+if (fsPrevBtn) fsPrevBtn.addEventListener('click', playPrevTrack);
+if (fsNextBtn) fsNextBtn.addEventListener('click', playNextTrack);
+if (fsShuffleBtn) {
+  fsShuffleBtn.addEventListener('click', () => {
+    shuffleBtn.click();
+    syncFullscreenPlayerUI();
+  });
+}
+if (fsRepeatBtn) {
+  fsRepeatBtn.addEventListener('click', () => {
+    repeatBtn.click();
+    syncFullscreenPlayerUI();
+  });
+}
+
+// Fullscreen Scrubbing
+if (fsProgressBar) {
+  fsProgressBar.addEventListener('input', () => {
+    isFsScrubbing = true;
+    if (audio.duration && !isNaN(audio.duration)) {
+      const seekTime = (fsProgressBar.value / 100) * audio.duration;
+      if (fsCurrentTime) fsCurrentTime.innerText = formatTime(seekTime);
+    }
+  });
+
+  fsProgressBar.addEventListener('change', () => {
+    isFsScrubbing = false;
+    if (audio.duration && !isNaN(audio.duration)) {
+      audio.currentTime = (fsProgressBar.value / 100) * audio.duration;
+      progressBar.value = fsProgressBar.value;
+    }
+  });
+}
+
+// Like toggle for current song
+function toggleCurrentSongLike() {
+  const cur = trackList[currentTrackIndex];
+  if (!cur) return;
+  let likedSongs = getLikedSongs();
+  const existsIndex = likedSongs.findIndex(s => s.src === cur.src);
+  if (existsIndex > -1) {
+    likedSongs.splice(existsIndex, 1);
+    localStorage.setItem(LIKED_KEY, JSON.stringify(likedSongs));
+    showToast(`Removed "${cur.title}" from Liked Songs`, 'info');
+  } else {
+    likedSongs.unshift(cur);
+    localStorage.setItem(LIKED_KEY, JSON.stringify(likedSongs));
+    showToast(`Added to Liked Songs ❤️`, 'heart');
+  }
+  syncFullscreenPlayerUI();
+  renderTracks();
+}
+
+if (fsHeartBtn) fsHeartBtn.addEventListener('click', toggleCurrentSongLike);
+if (miniHeartBtn) {
+  miniHeartBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCurrentSongLike();
+  });
+}
+
+// Fullscreen Quick Actions
+if (fsLyricsBtn) {
+  fsLyricsBtn.addEventListener('click', () => {
+    if (lyricsBtn) lyricsBtn.click();
+  });
+}
+if (fsEightDBtn) {
+  fsEightDBtn.addEventListener('click', () => {
+    const eightDBtn = document.getElementById('eight-d-btn');
+    if (eightDBtn) {
+      eightDBtn.click();
+      if (eightDBtn.classList.contains('active')) {
+        fsEightDBtn.classList.add('active');
+      } else {
+        fsEightDBtn.classList.remove('active');
+      }
+    }
+  });
+}
+if (fsShareBtn) {
+  fsShareBtn.addEventListener('click', () => {
+    const shareCurrentBtn = document.getElementById('share-current-btn');
+    if (shareCurrentBtn) shareCurrentBtn.click();
+  });
+}
+
+// Main Category Filter Pills ('All', 'Music', 'Podcasts')
+const mainFilterPills = document.querySelectorAll('.main-filter-pill');
+mainFilterPills.forEach((pill) => {
+  pill.addEventListener('click', () => {
+    if (typeof closeArtistProfile === 'function') closeArtistProfile();
+    mainFilterPills.forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    const cat = pill.dataset.category;
+    if (cat === 'all') {
+      sectionTitle.innerText = "Trending Tracks";
+      fetchOnlineSongs("Top Hits");
+    } else if (cat === 'music') {
+      sectionTitle.innerText = "Trending Music & Hits";
+      fetchOnlineSongs("Trending Bollywood & Pop Hits");
+    } else if (cat === 'podcasts') {
+      sectionTitle.innerText = "Top Podcasts & Stories";
+      fetchOnlineSongs("Top Hindi Podcasts & Audio Stories");
+    }
+  });
+});
 
 // Initializations
 checkAuthState();

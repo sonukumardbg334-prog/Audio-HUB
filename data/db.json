@@ -8,6 +8,36 @@
       "likedSongs": [],
       "library": [
         {
+          "id": "kUETRYkk",
+          "title": "Chhath  (flute)",
+          "artist": "Rudra Shravan",
+          "cover": "https://c.saavncdn.com/146/Chhath-flute-Instrumental-2022-20221021133806-500x500.jpg",
+          "src": "https://aac.saavncdn.com/146/e5a3a71b6e69a17033cc4ef2c18eed51_160.mp4",
+          "duration": 138,
+          "album": "Chhath  (flute)",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "qmKDxfTO",
+          "title": "Chhath Puja 2022",
+          "artist": "Pawan Singh",
+          "cover": "https://c.saavncdn.com/186/Chhath-Puja-2022-Bhojpuri-2022-20221014153451-500x500.jpg",
+          "src": "https://aac.saavncdn.com/186/040b506d8988078bbd8b7982eb322004_160.mp4",
+          "duration": 538,
+          "album": "Chhath Puja 2022",
+          "source": "jiosaavn"
+        },
+        {
+          "id": "o_XMdzL1",
+          "title": "Chhath Puja Geet",
+          "artist": "Pawan Singh",
+          "cover": "https://c.saavncdn.com/256/Chhath-Puja-Geet-Bhojpuri-2023-20231107141008-500x500.jpg",
+          "src": "https://aac.saavncdn.com/256/f1a2ee913eb1401626492355c225d54f_160.mp4",
+          "duration": 189,
+          "album": "Chhath Puja Geet",
+          "source": "jiosaavn"
+        },
+        {
           "id": "permanent_dil_tu_torli",
           "title": "दिल तू तोरली सील हम तोरबो (Dil Tu Torli Sil Ham Torbo)",
           "artist": "Banshidhar Chaudhary, Suman Sona",

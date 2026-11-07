@@ -119,6 +119,13 @@
         </div>
       </header>
 
+      <!-- Main Category Filter Pills ('All', 'Music', 'Podcasts') -->
+      <div class="main-filter-pills" id="main-filter-pills">
+        <button class="main-filter-pill active" data-category="all">All</button>
+        <button class="main-filter-pill" data-category="music">Music</button>
+        <button class="main-filter-pill" data-category="podcasts">Podcasts</button>
+      </div>
+
       <!-- Mood & Genre Filter Pills -->
       <div class="mood-chips-container">
         <button class="mood-chip active" data-query="Top Hits"><i class="fa-solid fa-sparkles"></i> All</button>
@@ -203,12 +210,13 @@
 
   <!-- Sticky Bottom Audio Player -->
   <footer class="player-bar mini-player" id="player-bar">
-    <div class="now-playing">
+    <div class="now-playing" id="mini-now-playing" title="Expand Full Screen Player">
       <img src="https://via.placeholder.com/60" id="cover-art" alt="Album Cover">
       <div class="track-info">
         <h4 id="track-title">Select or Search a Song</h4>
         <p id="track-artist">Artist Name</p>
       </div>
+      <button id="mini-heart-btn" class="mini-heart-btn" title="Save to Liked Songs"><i class="fa-regular fa-heart"></i></button>
       <!-- Mini Visualizer Canvas -->
       <canvas id="visualizer-canvas" class="visualizer-canvas" width="60" height="24" title="Live Audio Visualizer"></canvas>
     </div>
@@ -244,6 +252,8 @@
     </div>
 
     <div class="player-right-controls">
+      <!-- Expand Fullscreen Player Modal -->
+      <button id="expand-player-btn" class="tool-btn" title="Open Fullscreen Player (Spotify View)"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
       <!-- Live Synced Lyrics -->
       <button id="lyrics-btn" class="tool-btn" title="Live Synced Lyrics (बोल / लिरिक्स)"><i class="fa-solid fa-microphone-lines"></i></button>
       <!-- Floating Mini-Player (Picture-in-Picture) -->
@@ -646,6 +656,88 @@
   <!-- Off-screen Canvas & Video for Floating Picture-in-Picture Mini-Player -->
   <canvas id="pip-canvas" width="400" height="400" style="display: none;"></canvas>
   <video id="pip-video" style="display: none;" playsinline muted></video>
+
+  <!-- EXPANDABLE SPOTIFY-STYLE FULLSCREEN POPUP PLAYER -->
+  <div class="fullscreen-player-modal" id="fullscreen-player-modal" aria-hidden="true">
+    <div class="fs-player-backdrop" id="fs-player-backdrop"></div>
+    <div class="fs-player-container">
+      <!-- Top Bar: Down Arrow (Collapse), Playlist Name, Options -->
+      <div class="fs-top-bar">
+        <button id="close-fullscreen-player-btn" class="fs-btn fs-collapse-btn" title="Collapse Player" aria-label="Collapse Player">
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="fs-header-title">
+          <span class="fs-subtext">PLAYING FROM PLAYLIST</span>
+          <span class="fs-playlist-name" id="fs-playlist-name">Top Trending Hits</span>
+        </div>
+        <button id="fs-options-btn" class="fs-btn" title="Options">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+      </div>
+
+      <!-- Center: Large Artwork with Soft Ambient Drop-Shadow -->
+      <div class="fs-artwork-wrapper">
+        <div class="fs-art-glow" id="fs-art-glow"></div>
+        <img src="https://via.placeholder.com/500" id="fs-cover-art" alt="Album Artwork" class="fs-cover-art">
+      </div>
+
+      <!-- Track Details & Like Button -->
+      <div class="fs-track-details">
+        <div class="fs-track-info">
+          <h2 id="fs-track-title" class="fs-track-title">Select a Song</h2>
+          <p id="fs-track-artist" class="fs-track-artist">Artist Name</p>
+        </div>
+        <button id="fs-heart-btn" class="fs-heart-btn" title="Save to Liked Songs">
+          <i class="fa-regular fa-heart"></i>
+        </button>
+      </div>
+
+      <!-- Full-Width Progress Scrub Bar -->
+      <div class="fs-progress-wrapper">
+        <input type="range" id="fs-progress-bar" class="fs-progress-bar" value="0" min="0" max="100">
+        <div class="fs-time-stamps">
+          <span id="fs-current-time">0:00</span>
+          <span id="fs-total-time">0:00</span>
+        </div>
+      </div>
+
+      <!-- Main Controls: Shuffle, Prev, Big Play/Pause, Next, Repeat -->
+      <div class="fs-controls">
+        <button id="fs-shuffle-btn" class="fs-ctrl-btn" title="Shuffle">
+          <i class="fa-solid fa-shuffle"></i>
+        </button>
+        <button id="fs-prev-btn" class="fs-ctrl-btn fs-prev" title="Previous Track">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button id="fs-play-btn" class="fs-play-pause-btn" title="Play/Pause">
+          <i class="fa-solid fa-play"></i>
+        </button>
+        <button id="fs-next-btn" class="fs-ctrl-btn fs-next" title="Next Track">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+        <button id="fs-repeat-btn" class="fs-ctrl-btn" title="Repeat">
+          <i class="fa-solid fa-repeat"></i>
+          <span id="fs-repeat-badge" class="repeat-badge hidden">1</span>
+        </button>
+      </div>
+
+      <!-- Bottom Quick Actions: Lyrics, 8D Audio, Share -->
+      <div class="fs-bottom-actions">
+        <button id="fs-lyrics-btn" class="fs-action-pill" title="Live Synced Lyrics">
+          <i class="fa-solid fa-microphone-lines"></i>
+          <span>Lyrics</span>
+        </button>
+        <button id="fs-eight-d-btn" class="fs-action-pill" title="8D Spatial Audio">
+          <i class="fa-solid fa-headphones"></i>
+          <span>8D Audio</span>
+        </button>
+        <button id="fs-share-btn" class="fs-action-pill" title="Share Track">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>Share</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Socket.io for Real-time Party Mode -->
   <script src="/socket.io/socket.io.js"></script>
